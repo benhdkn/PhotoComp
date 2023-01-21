@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>PhotoComp</title>
+        <style>
+            html, body { 
+                margin: 0 auto; 
+                padding: 0; 
+                border: none; 
+            }
+            #composition { 
+                position: relative; 
+                width: 800px; 
+                height: 500px; 
+                background-color: grey;}
+            .frame { 
+                position: absolute; 
+                box-sizing: border-box;
+                -moz-box-sizing: border-box;
+                -webkit-box-sizing: border-box;
+                background-size: cover; 
+                background-repeat: no-repeat;
+                background-position: center center;
+            }
+            #frame-0 { 
+                top: 0;
+                left: 0;
+                width: 50%; 
+                height: 50%;
+                border: 5px solid white;
+            }
+            #frame-1 { 
+                top: 50%;
+                left: 0;
+                width: 50%; 
+                height: 50%;
+                border: 5px solid white;
+            }
+            #frame-2 { 
+                top: 0;
+                left: 50%;
+                width: 50%; 
+                height: 100%;
+                border: 5px solid white;
+            }
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="libs/dom-to-image.min.js"></script>
+    </head>
+    <body>
+        <h1>PhotoComp</h1>
+        <div id="composition">
+            <div class="frame" id="frame-0"></div>
+            <div class="frame" id="frame-1"></div>
+            <div class="frame" id="frame-2"></div>
+        </div>
+        <br>
+        <input type="file" name="" id="file" value="Click" multiple="multiple">
+        <br>
+        <button type="button" id="save">Save</button>
+    </body>
+    <script>
+        // To do
+        // 1) Load image inside div (upload client-side only)
+        // 2) Export composition as image as HD image
+        // 3) Customize composition grid (add/remove frame, resize frame, etc.) -- https://stackoverflow.com/questions/8960193/how-to-make-html-element-resizable-using-pure-javascript
+        // 4) Export/load composition grid properties
+
+        const frameDivName = '#frame-';
+
+        var imagesPaths = [];
+
+        var domtoimage;
+        
+        $(document).ready(function() {
+            $("#file").change(function() {
+                var length = this.files.length;
+                if (!length) {
+                    return false;
+                }
+                setFramesBackgrounds(this);
+            });
+
+            $("#save").click(function() {
+                saveToJpg();
+            });
+        });
+    
+        function setFramesBackgrounds(inputFiles) {
+            imagesPaths = [];
+
+            var files = inputFiles.files;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var imagefile = file.type;
+                var match = ["image/jpeg","image/png","image/jpg"];
+                if (!((imagefile == match[0]) || (imagefile == match[1]) || (imagefile == match[2]))) {
+                    alert("Invalid File Extension");
+                }  
+                else {
+                    var reader = new FileReader();
+                    reader.onload = onLoadHandler;
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            function onLoadHandler(e) {
+                imagesPaths.push(e.target.result);
+
+                // Change that for something that set it once all onload call are done
+                for (var i = 0; i < imagesPaths.length; i++) {
+                    $(frameDivName + i).css({ 'background-image': "url(" + imagesPaths[i] + ")" });
+                }
+            }  
+        }
+
+        function saveToJpg()
+        {
+            var compositionDiv = document.getElementById('composition');
+            // Increase size for rendering
+            composition.style.height = "5000px";
+            composition.style.width = "8000px";
+            domtoimage.toJpeg(compositionDiv, { quality: 1, height: 5000, width: 8000 })
+            .then(function (dataUrl) {
+                var link = document.createElement('a');
+                link.download = 'my-image-name.jpeg';
+                link.href = dataUrl;
+                link.click();
+                // Set size back to something we can work with
+                composition.style.height = "500px";
+                composition.style.width = "800px";
+            });
+        }
+    </script>
+</html>
