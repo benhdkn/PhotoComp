@@ -15,7 +15,14 @@
             color: #f2f2f7;
         }
 
-        h1 { margin: 0 0 24px; font-size: 22px; }
+        h1 {
+            margin: 0 0 24px;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #f2f2f7;
+            font-weight: 600;
+        }
 
         .label {
             font-size: 11px;
@@ -251,18 +258,21 @@
         }
 
         #save {
-            padding: 8px 20px;
-            background: #f2f2f7;
-            color: #1c1c1e;
-            border: none;
+            appearance: none;
+            -webkit-appearance: none;
+            display: inline-block;
+            padding: 8px 16px;
+            background: #2c2c2e;
+            color: #f2f2f7;
+            border: 1px solid #3a3a3c;
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             font-family: inherit;
-            font-weight: 600;
+            font-weight: normal;
         }
 
-        #save:hover { background: #d1d1d6; }
+        #save:hover { background: #3a3a3c; }
 
         #save:disabled {
             opacity: 0.4;
@@ -324,7 +334,7 @@
     <script src="libs/dom-to-image.min.js"></script>
 </head>
 <body>
-    <h1>PhotoComp</h1>
+    <h1>Photo Comp</h1>
 
     <div class="label">Number of photos</div>
     <div class="count-picker" id="count-picker"></div>
