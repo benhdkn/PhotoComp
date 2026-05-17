@@ -95,6 +95,14 @@
             border: 5px solid white;
             cursor: pointer;
             overflow: hidden;
+            background-color: #d0d0d0;
+            background-image:
+                linear-gradient(45deg, #a8a8a8 25%, transparent 25%),
+                linear-gradient(-45deg, #a8a8a8 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #a8a8a8 75%),
+                linear-gradient(-45deg, transparent 75%, #a8a8a8 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
         }
 
         .frame.selected::after {
