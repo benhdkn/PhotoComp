@@ -212,11 +212,6 @@
 
         .file-label:hover { background: #3a3a3c; }
 
-        .file-label.disabled {
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
         #save {
             padding: 8px 20px;
             background: #f2f2f7;
@@ -287,6 +282,12 @@
         <div class="pattern-list" id="pattern-list"></div>
     </div>
 
+    <div id="photo-section" style="display:none; margin-bottom:24px;">
+        <div class="label">Photos</div>
+        <label class="file-label" id="file-label" for="file">Choose photos</label>
+        <input type="file" id="file" accept="image/jpeg,image/png" multiple>
+    </div>
+
     <div id="grid-controls" style="display:none; margin-bottom:16px;">
         <div class="label">Grid</div>
         <div class="setting-row" style="width:600px;">
@@ -333,10 +334,7 @@
         <button id="save" disabled>Export JPEG</button>
     </div>
 
-    <div class="actions">
-        <label class="file-label disabled" id="file-label" for="file">Choose photos</label>
-        <input type="file" id="file" accept="image/jpeg,image/png" multiple>
-    </div>
+    <div class="actions"></div>
 
     <script>
         const RESOLUTIONS = [
@@ -844,9 +842,9 @@
             renderFrames(loadedImages);
             updateFrameBorders();
 
+            document.getElementById('photo-section').style.display = 'block';
             document.getElementById('grid-controls').style.display = 'block';
             document.getElementById('export-section').style.display = 'block';
-            document.getElementById('file-label').classList.remove('disabled');
         }
 
         function onFileChange() {
