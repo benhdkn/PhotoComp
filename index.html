@@ -268,6 +268,58 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
+
+        /* Export overlay */
+        #export-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #export-overlay.visible { display: flex; }
+
+        .export-card {
+            background: #2c2c2e;
+            border-radius: 12px;
+            padding: 28px 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .export-card p {
+            margin: 0;
+            font-size: 14px;
+            color: #f2f2f7;
+        }
+
+        .progress-track {
+            width: 220px;
+            height: 4px;
+            background: #3a3a3c;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-track::after {
+            content: '';
+            display: block;
+            width: 45%;
+            height: 100%;
+            background: #0a84ff;
+            border-radius: 2px;
+            animation: progress-slide 1.2s ease-in-out infinite;
+        }
+
+        @keyframes progress-slide {
+            0%   { transform: translateX(-120%); }
+            100% { transform: translateX(320%); }
+        }
     </style>
     <script src="libs/dom-to-image.min.js"></script>
 </head>
@@ -335,6 +387,13 @@
     </div>
 
     <div class="actions"></div>
+
+    <div id="export-overlay">
+        <div class="export-card">
+            <p>Exporting…</p>
+            <div class="progress-track"></div>
+        </div>
+    </div>
 
     <script>
         const RESOLUTIONS = [
@@ -892,10 +951,13 @@
             };
         }
 
-        function updateFrameBorders(innerW = borderWidth, outerW = outerBorderWidth) {
+        function updateFrameBorders(innerW = borderWidth, outerW = outerBorderWidth, container = document) {
             if (!currentPattern) return;
+            const wrapper = container === document
+                ? document.getElementById('composition-wrapper')
+                : container;
             currentPattern.frames.forEach((f, i) => {
-                const frame = document.getElementById(`frame-${i}`);
+                const frame = wrapper.querySelector(`#frame-${i}`);
                 if (!frame) return;
                 const outer = getOuterSides(f);
                 frame.style.borderTopWidth    = outer.top    ? '0' : `${innerW}px`;
@@ -903,7 +965,7 @@
                 frame.style.borderBottomWidth = outer.bottom ? '0' : `${innerW}px`;
                 frame.style.borderRightWidth  = outer.right  ? '0' : `${innerW}px`;
             });
-            document.getElementById('composition-wrapper').style.borderWidth = `${outerW}px`;
+            wrapper.style.borderWidth = `${outerW}px`;
         }
 
         function selectFrame(i) {
@@ -986,18 +1048,24 @@
         }
 
         function saveToJpg() {
-            const composition = document.getElementById('composition');
-            const wrapper = document.getElementById('composition-wrapper');
+            document.getElementById('export-overlay').classList.add('visible');
+
             const scale = exportResolution / 600;
             const scaledBorder = Math.round(borderWidth * scale);
             const scaledOuterBorder = Math.round(outerBorderWidth * scale);
             const exportTotal = exportResolution + 2 * scaledOuterBorder;
 
-            composition.style.width = `${exportResolution}px`;
-            composition.style.height = `${exportResolution}px`;
-            updateFrameBorders(scaledBorder, scaledOuterBorder);
+            const clone = document.getElementById('composition-wrapper').cloneNode(true);
+            clone.style.position = 'fixed';
+            clone.style.left = '-99999px';
+            clone.style.top = '0';
+            document.body.appendChild(clone);
 
-            domtoimage.toJpeg(wrapper, { quality: 1, width: exportTotal, height: exportTotal })
+            clone.querySelector('#composition').style.width = `${exportResolution}px`;
+            clone.querySelector('#composition').style.height = `${exportResolution}px`;
+            updateFrameBorders(scaledBorder, scaledOuterBorder, clone);
+
+            domtoimage.toJpeg(clone, { quality: 1, width: exportTotal, height: exportTotal })
                 .then(dataUrl => {
                     const link = document.createElement('a');
                     link.download = 'composition.jpeg';
@@ -1009,9 +1077,8 @@
                     alert('Export failed. See console for details.');
                 })
                 .finally(() => {
-                    composition.style.width = '600px';
-                    composition.style.height = '600px';
-                    updateFrameBorders();
+                    document.body.removeChild(clone);
+                    document.getElementById('export-overlay').classList.remove('visible');
                 });
         }
 
