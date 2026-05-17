@@ -379,12 +379,12 @@
         <div class="setting-row" style="width:600px;">
             <span>Line width</span>
             <input type="range" id="border-slider" min="0" max="30" value="5" step="1">
-            <span class="value" id="border-value">5px</span>
+            <input type="number" id="border-value" min="0" max="30" value="5" step="1">
         </div>
         <div class="setting-row" style="width:600px;">
             <span>Outer border</span>
             <input type="range" id="outer-border-slider" min="0" max="30" value="5" step="1">
-            <span class="value" id="outer-border-value">5px</span>
+            <input type="number" id="outer-border-value" min="0" max="30" value="5" step="1">
         </div>
     </div>
 
@@ -847,13 +847,25 @@
 
             document.getElementById('border-slider').addEventListener('input', function () {
                 borderWidth = Number(this.value);
-                document.getElementById('border-value').textContent = `${borderWidth}px`;
+                document.getElementById('border-value').value = borderWidth;
+                updateFrameBorders();
+            });
+
+            document.getElementById('border-value').addEventListener('input', function () {
+                borderWidth = Math.min(30, Math.max(0, Number(this.value) || 0));
+                document.getElementById('border-slider').value = borderWidth;
                 updateFrameBorders();
             });
 
             document.getElementById('outer-border-slider').addEventListener('input', function () {
                 outerBorderWidth = Number(this.value);
-                document.getElementById('outer-border-value').textContent = `${outerBorderWidth}px`;
+                document.getElementById('outer-border-value').value = outerBorderWidth;
+                updateFrameBorders();
+            });
+
+            document.getElementById('outer-border-value').addEventListener('input', function () {
+                outerBorderWidth = Math.min(30, Math.max(0, Number(this.value) || 0));
+                document.getElementById('outer-border-slider').value = outerBorderWidth;
                 updateFrameBorders();
             });
         }
