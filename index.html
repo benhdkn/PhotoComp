@@ -599,9 +599,16 @@
 
             if (!files.length) return;
 
-            loadImages(files)
+            const startIndex = loadedImages.length;
+            const slotsLeft = currentPattern.frames.length - startIndex;
+
+            if (slotsLeft <= 0) return;
+
+            loadImages(files.slice(0, slotsLeft))
                 .then(images => {
-                    loadedImages = images;
+                    images.forEach((src, i) => {
+                        loadedImages[startIndex + i] = src;
+                    });
                     renderFrames(loadedImages);
                     document.getElementById('save').disabled = false;
                 })
