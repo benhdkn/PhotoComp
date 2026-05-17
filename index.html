@@ -190,6 +190,7 @@
             text-align: right;
             flex-shrink: 0;
             -moz-appearance: textfield;
+            appearance: textfield;
         }
 
         .setting-row input[type="number"]::-webkit-inner-spin-button,
@@ -223,6 +224,8 @@
 
         .setting-btn.danger { border-color: #ff453a; color: #ff453a; background: none; }
         .setting-btn.danger:hover { background: rgba(255, 69, 58, 0.1); }
+        .setting-btn.success { border-color: #30d158; color: #30d158; background: none; }
+        .setting-btn.success:hover { background: rgba(48, 209, 88, 0.1); }
 
         /* Actions */
         .actions { display: flex; gap: 12px; align-items: center; }
@@ -242,18 +245,6 @@
         }
 
         .file-label:hover { background: #3a3a3c; }
-
-        #save {
-            padding: 8px 20px;
-            background: #f2f2f7;
-            color: #1c1c1e;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-family: inherit;
-            font-weight: 600;
-        }
 
         /* Sections hidden until pattern is selected */
         #photo-section,
@@ -314,22 +305,7 @@
             font-weight: 600;
         }
 
-        #save {
-            appearance: none;
-            -webkit-appearance: none;
-            display: inline-block;
-            padding: 8px 16px;
-            background: #2c2c2e;
-            color: #f2f2f7;
-            border: 1px solid #3a3a3c;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-family: inherit;
-            font-weight: normal;
-        }
-
-        #save:hover { background: #3a3a3c; }
+        #save { padding: 8px 16px; font-size: 14px; }
 
         #save:disabled {
             opacity: 0.4;
@@ -452,7 +428,7 @@
         <div class="label">Export</div>
         <div id="export-row">
             <div class="res-picker" id="res-picker"></div>
-            <button id="save" disabled>Export JPEG</button>
+            <button id="save" class="setting-btn success" disabled>Export JPEG</button>
         </div>
     </div>
 
