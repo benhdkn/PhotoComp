@@ -364,7 +364,7 @@
         </div>
     </div>
 
-    <div id="composition-wrapper">
+    <div id="composition-wrapper" style="display:none;">
         <div id="composition"></div>
     </div>
 
@@ -911,6 +911,7 @@
             renderFrames(loadedImages);
             updateFrameBorders();
 
+            document.getElementById('composition-wrapper').style.display = 'inline-block';
             document.getElementById('photo-section').style.display = 'block';
             document.getElementById('grid-controls').style.display = 'block';
             document.getElementById('export-section').style.display = 'block';
