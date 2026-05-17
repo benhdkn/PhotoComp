@@ -92,44 +92,91 @@
 
         .frame {
             position: absolute;
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
             border: 5px solid white;
             cursor: pointer;
+            overflow: hidden;
         }
 
-        .frame.selected {
-            box-shadow: inset 0 0 0 3px #0a84ff;
-        }
-
-        .frame-controls {
+        .frame.selected::after {
+            content: '';
             position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none;
-            gap: 6px;
-            background: rgba(0, 0, 0, 0.75);
-            border-radius: 6px;
-            padding: 5px 8px;
-            white-space: nowrap;
+            inset: 0;
+            border: 3px solid rgba(10, 132, 255, 0.4);
+            background: rgba(10, 132, 255, 0.04);
+            pointer-events: none;
+            z-index: 1;
         }
 
-        .frame.selected .frame-controls { display: flex; }
+        .frame-image {
+            position: absolute;
+            inset: 0;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transform-origin: center center;
+        }
 
-        .frame-btn {
-            background: none;
-            border: none;
+        /* Frame settings panel */
+        #frame-settings {
+            display: none;
+            width: 600px;
+            background: #2c2c2e;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            gap: 12px;
+            flex-direction: column;
+        }
+
+        #frame-settings.visible { display: flex; }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-row span:first-child {
+            font-size: 12px;
+            color: #8e8e93;
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .setting-row input[type="range"] {
+            flex: 1;
+            accent-color: #0a84ff;
+        }
+
+        .setting-row .value {
+            font-size: 12px;
+            color: #f2f2f7;
+            width: 36px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .setting-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 4px;
+        }
+
+        .setting-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #3a3a3c;
+            background: #3a3a3c;
             color: #f2f2f7;
             cursor: pointer;
             font-size: 12px;
             font-family: inherit;
-            padding: 2px 6px;
-            border-radius: 4px;
         }
 
-        .frame-btn:hover { background: rgba(255, 255, 255, 0.15); }
+        .setting-btn:hover { background: #48484a; }
+
+        .setting-btn.danger { border-color: #ff453a; color: #ff453a; background: none; }
+        .setting-btn.danger:hover { background: rgba(255, 69, 58, 0.1); }
 
         /* Actions */
         .actions { display: flex; gap: 12px; align-items: center; }
@@ -188,6 +235,28 @@
     </div>
 
     <div id="composition"></div>
+
+    <div id="frame-settings">
+        <div class="setting-row">
+            <span>Zoom</span>
+            <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
+            <span class="value" id="zoom-value">100%</span>
+        </div>
+        <div class="setting-row">
+            <span>Horizontal</span>
+            <input type="range" id="x-slider" min="-50" max="50" value="0" step="1">
+            <span class="value" id="x-value">0</span>
+        </div>
+        <div class="setting-row">
+            <span>Vertical</span>
+            <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
+            <span class="value" id="y-value">0</span>
+        </div>
+        <div class="setting-actions">
+            <button class="setting-btn" id="replace-btn">Replace photo</button>
+            <button class="setting-btn danger" id="clear-btn">Clear</button>
+        </div>
+    </div>
 
     <div class="actions">
         <label class="file-label disabled" id="file-label" for="file">Choose photos</label>
@@ -518,6 +587,8 @@
 
         let currentPattern = null;
         let loadedImages = [];
+        let frameAdjustments = {};
+        let selectedFrameIndex = null;
 
         function init() {
             const countPicker = document.getElementById('count-picker');
@@ -533,6 +604,37 @@
             document.getElementById('file').addEventListener('change', onFileChange);
             document.getElementById('save').addEventListener('click', saveToJpg);
             document.addEventListener('click', deselectAll);
+
+            document.getElementById('zoom-slider').addEventListener('input', function () {
+                if (selectedFrameIndex === null) return;
+                frameAdjustments[selectedFrameIndex].zoom = Number(this.value) / 100;
+                document.getElementById('zoom-value').textContent = `${this.value}%`;
+                applyFrameAdjustment(selectedFrameIndex);
+            });
+
+            document.getElementById('x-slider').addEventListener('input', function () {
+                if (selectedFrameIndex === null) return;
+                frameAdjustments[selectedFrameIndex].x = Number(this.value);
+                document.getElementById('x-value').textContent = this.value;
+                applyFrameAdjustment(selectedFrameIndex);
+            });
+
+            document.getElementById('y-slider').addEventListener('input', function () {
+                if (selectedFrameIndex === null) return;
+                frameAdjustments[selectedFrameIndex].y = Number(this.value);
+                document.getElementById('y-value').textContent = this.value;
+                applyFrameAdjustment(selectedFrameIndex);
+            });
+
+            document.getElementById('replace-btn').addEventListener('click', () => {
+                if (selectedFrameIndex !== null) replaceFrame(selectedFrameIndex);
+            });
+
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                if (selectedFrameIndex !== null) clearFrame(selectedFrameIndex);
+            });
+
+            document.getElementById('frame-settings').addEventListener('click', e => e.stopPropagation());
         }
 
         function selectCount(n) {
@@ -605,8 +707,12 @@
         function applyPattern(pattern) {
             const composition = document.getElementById('composition');
             composition.innerHTML = '';
+            frameAdjustments = {};
+            deselectAll();
 
             pattern.frames.forEach((f, i) => {
+                frameAdjustments[i] = { zoom: 1, x: 0, y: 0 };
+
                 const frame = document.createElement('div');
                 frame.className = 'frame';
                 frame.id = `frame-${i}`;
@@ -615,22 +721,15 @@
                 frame.style.width = `${f.width}%`;
                 frame.style.height = `${f.height}%`;
 
-                const controls = document.createElement('div');
-                controls.className = 'frame-controls';
-                controls.innerHTML = `
-                    <button class="frame-btn" data-action="replace">Replace</button>
-                    <button class="frame-btn" data-action="clear">Clear</button>
-                `;
-                frame.appendChild(controls);
+                const image = document.createElement('div');
+                image.className = 'frame-image';
+                frame.appendChild(image);
 
                 frame.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const action = e.target.dataset.action;
-                    if (action === 'clear') { clearFrame(i); return; }
-                    if (action === 'replace') { replaceFrame(i); return; }
                     const isSelected = frame.classList.contains('selected');
                     deselectAll();
-                    if (!isSelected) frame.classList.add('selected');
+                    if (!isSelected) selectFrame(i);
                 });
 
                 composition.appendChild(frame);
@@ -677,13 +776,44 @@
             return slots;
         }
 
+        function selectFrame(i) {
+            selectedFrameIndex = i;
+            document.getElementById(`frame-${i}`).classList.add('selected');
+
+            const adj = frameAdjustments[i];
+            const zoomPct = Math.round(adj.zoom * 100);
+            document.getElementById('zoom-slider').value = zoomPct;
+            document.getElementById('zoom-value').textContent = `${zoomPct}%`;
+            document.getElementById('x-slider').value = adj.x;
+            document.getElementById('x-value').textContent = adj.x;
+            document.getElementById('y-slider').value = adj.y;
+            document.getElementById('y-value').textContent = adj.y;
+
+            document.getElementById('frame-settings').classList.add('visible');
+        }
+
+        function deselectAll() {
+            selectedFrameIndex = null;
+            document.querySelectorAll('.frame.selected').forEach(f => f.classList.remove('selected'));
+            document.getElementById('frame-settings').classList.remove('visible');
+        }
+
+        function applyFrameAdjustment(i) {
+            const image = document.querySelector(`#frame-${i} .frame-image`);
+            if (!image) return;
+            const { zoom, x, y } = frameAdjustments[i];
+            image.style.transform = `scale(${zoom}) translate(${x}%, ${y}%)`;
+        }
+
         function clearFrame(i) {
             loadedImages[i] = null;
-            const frame = document.getElementById(`frame-${i}`);
-            if (frame) {
-                frame.style.backgroundImage = '';
-                frame.classList.remove('selected');
+            frameAdjustments[i] = { zoom: 1, x: 0, y: 0 };
+            const image = document.querySelector(`#frame-${i} .frame-image`);
+            if (image) {
+                image.style.backgroundImage = '';
+                image.style.transform = '';
             }
+            deselectAll();
         }
 
         function replaceFrame(i) {
@@ -696,16 +826,14 @@
                 loadImages([file])
                     .then(([src]) => {
                         loadedImages[i] = src;
+                        frameAdjustments[i] = { zoom: 1, x: 0, y: 0 };
                         renderFrames(loadedImages);
-                        document.getElementById(`frame-${i}`).classList.remove('selected');
+                        applyFrameAdjustment(i);
+                        selectFrame(i);
                     })
                     .catch(err => console.error('Failed to replace image:', err));
             });
             input.click();
-        }
-
-        function deselectAll() {
-            document.querySelectorAll('.frame.selected').forEach(f => f.classList.remove('selected'));
         }
 
         function loadImages(files) {
@@ -721,9 +849,9 @@
         function renderFrames(images) {
             if (!currentPattern) return;
             images.forEach((src, i) => {
-                const frame = document.getElementById(`frame-${i}`);
-                if (!frame) return;
-                frame.style.backgroundImage = src ? `url(${src})` : '';
+                const image = document.querySelector(`#frame-${i} .frame-image`);
+                if (!image) return;
+                image.style.backgroundImage = src ? `url(${src})` : '';
             });
         }
 
