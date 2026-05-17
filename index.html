@@ -91,7 +91,6 @@
         #composition-wrapper {
             display: inline-block;
             border: 5px solid white;
-            margin-bottom: 16px;
         }
 
         #composition {
@@ -141,13 +140,13 @@
         /* Frame settings panel */
         #frame-settings {
             display: none;
-            width: 600px;
+            width: 280px;
             background: #2c2c2e;
             border-radius: 8px;
             padding: 14px 16px;
-            margin-bottom: 16px;
             gap: 12px;
             flex-direction: column;
+            flex-shrink: 0;
         }
 
         #frame-settings.visible { display: flex; }
@@ -167,6 +166,7 @@
 
         .setting-row input[type="range"] {
             flex: 1;
+            min-width: 0;
             accent-color: #0a84ff;
         }
 
@@ -387,29 +387,31 @@
         </div>
     </div>
 
-    <div id="composition-wrapper" style="display:none;">
-        <div id="composition"></div>
-    </div>
+    <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
+        <div id="composition-wrapper" style="display:none;">
+            <div id="composition"></div>
+        </div>
 
-    <div id="frame-settings">
-        <div class="setting-row">
-            <span>Zoom</span>
-            <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
-            <input type="number" id="zoom-value" min="100" max="300" value="100" step="1">
-        </div>
-        <div class="setting-row">
-            <span>Horizontal</span>
-            <input type="range" id="x-slider" min="-50" max="50" value="0" step="1">
-            <input type="number" id="x-value" min="-50" max="50" value="0" step="1">
-        </div>
-        <div class="setting-row">
-            <span>Vertical</span>
-            <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
-            <input type="number" id="y-value" min="-50" max="50" value="0" step="1">
-        </div>
-        <div class="setting-actions">
-            <button class="setting-btn" id="replace-btn">Replace photo</button>
-            <button class="setting-btn danger" id="clear-btn">Clear</button>
+        <div id="frame-settings">
+            <div class="setting-row">
+                <span>Zoom</span>
+                <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
+                <input type="number" id="zoom-value" min="100" max="300" value="100" step="1">
+            </div>
+            <div class="setting-row">
+                <span>Horizontal</span>
+                <input type="range" id="x-slider" min="-50" max="50" value="0" step="1">
+                <input type="number" id="x-value" min="-50" max="50" value="0" step="1">
+            </div>
+            <div class="setting-row">
+                <span>Vertical</span>
+                <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
+                <input type="number" id="y-value" min="-50" max="50" value="0" step="1">
+            </div>
+            <div class="setting-actions">
+                <button class="setting-btn" id="replace-btn">Replace photo</button>
+                <button class="setting-btn danger" id="clear-btn">Clear</button>
+            </div>
         </div>
     </div>
 
