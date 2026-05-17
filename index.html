@@ -355,7 +355,6 @@
             100% { transform: translateX(320%); }
         }
     </style>
-    <script src="libs/dom-to-image.min.js"></script>
 </head>
 <body>
     <h1>Photo Comp</h1>
@@ -1134,18 +1133,76 @@
             const scaledOuterBorder = Math.round(outerBorderWidth * scale);
             const exportTotal = exportResolution + 2 * scaledOuterBorder;
 
-            const clone = document.getElementById('composition-wrapper').cloneNode(true);
-            clone.style.position = 'fixed';
-            clone.style.left = '-99999px';
-            clone.style.top = '0';
-            document.body.appendChild(clone);
+            const imagePromises = loadedImages.map(src => {
+                if (!src) return Promise.resolve(null);
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = src;
+                });
+            });
 
-            clone.querySelector('#composition').style.width = `${exportResolution}px`;
-            clone.querySelector('#composition').style.height = `${exportResolution}px`;
-            updateFrameBorders(scaledBorder, scaledOuterBorder, clone);
+            Promise.all(imagePromises)
+                .then(images => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = exportTotal;
+                    canvas.height = exportTotal;
+                    const ctx = canvas.getContext('2d');
 
-            domtoimage.toJpeg(clone, { quality: 1, width: exportTotal, height: exportTotal })
-                .then(dataUrl => {
+                    // White base — covers outer border + inner grid lines
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, exportTotal, exportTotal);
+
+                    currentPattern.frames.forEach((f, i) => {
+                        const outer = getOuterSides(f);
+
+                        const fx = scaledOuterBorder + f.left / 100 * exportResolution;
+                        const fy = scaledOuterBorder + f.top / 100 * exportResolution;
+                        const fw = f.width / 100 * exportResolution;
+                        const fh = f.height / 100 * exportResolution;
+
+                        const bT = outer.top    ? 0 : scaledBorder;
+                        const bL = outer.left   ? 0 : scaledBorder;
+                        const bR = outer.right  ? 0 : scaledBorder;
+                        const bB = outer.bottom ? 0 : scaledBorder;
+
+                        const innerX = fx + bL;
+                        const innerY = fy + bT;
+                        const innerW = fw - bL - bR;
+                        const innerH = fh - bT - bB;
+
+                        ctx.fillStyle = '#2c2c2e';
+                        ctx.fillRect(innerX, innerY, innerW, innerH);
+
+                        const img = images[i];
+                        if (!img) return;
+
+                        const adj = frameAdjustments[i] || { zoom: 1, x: 0, y: 0 };
+
+                        // Replicate background-size: contain
+                        const containScale = Math.min(innerW / img.naturalWidth, innerH / img.naturalHeight);
+                        const renderedW = img.naturalWidth * containScale;
+                        const renderedH = img.naturalHeight * containScale;
+                        const cx = (innerW - renderedW) / 2;
+                        const cy = (innerH - renderedH) / 2;
+
+                        // Replicate transform: scale(zoom) translate(x%, y%)
+                        const zoom = adj.zoom;
+                        const finalW = renderedW * zoom;
+                        const finalH = renderedH * zoom;
+                        const finalX = innerW / 2 + (cx - innerW / 2) * zoom + innerW * adj.x / 100;
+                        const finalY = innerH / 2 + (cy - innerH / 2) * zoom + innerH * adj.y / 100;
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(innerX, innerY, innerW, innerH);
+                        ctx.clip();
+                        ctx.drawImage(img, innerX + finalX, innerY + finalY, finalW, finalH);
+                        ctx.restore();
+                    });
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
                     const link = document.createElement('a');
                     link.download = generateFilename();
                     link.href = dataUrl;
@@ -1156,7 +1213,6 @@
                     alert('Export failed. See console for details.');
                 })
                 .finally(() => {
-                    document.body.removeChild(clone);
                     document.getElementById('export-overlay').classList.remove('visible');
                 });
         }
