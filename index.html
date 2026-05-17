@@ -1047,6 +1047,14 @@
             });
         }
 
+        function generateFilename() {
+            const now = new Date();
+            const date = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+            const time = now.toTimeString().slice(0, 8).replace(/:/g, '-'); // HH-MM-SS
+            const res = RESOLUTIONS.find(r => r.value === exportResolution)?.label ?? `${exportResolution}px`;
+            return `PhotoComp_${date}_${time}_${res}.jpeg`;
+        }
+
         function saveToJpg() {
             document.getElementById('export-overlay').classList.add('visible');
 
@@ -1068,7 +1076,7 @@
             domtoimage.toJpeg(clone, { quality: 1, width: exportTotal, height: exportTotal })
                 .then(dataUrl => {
                     const link = document.createElement('a');
-                    link.download = 'composition.jpeg';
+                    link.download = generateFilename();
                     link.href = dataUrl;
                     link.click();
                 })
