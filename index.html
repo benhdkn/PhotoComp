@@ -178,6 +178,30 @@
             flex-shrink: 0;
         }
 
+        .setting-row input[type="number"] {
+            width: 52px;
+            background: #3a3a3c;
+            border: 1px solid #48484a;
+            border-radius: 4px;
+            color: #f2f2f7;
+            font-size: 12px;
+            font-family: inherit;
+            padding: 2px 6px;
+            text-align: right;
+            flex-shrink: 0;
+            -moz-appearance: textfield;
+        }
+
+        .setting-row input[type="number"]::-webkit-inner-spin-button,
+        .setting-row input[type="number"]::-webkit-outer-spin-button {
+            opacity: 0;
+        }
+
+        .setting-row input[type="number"]:focus {
+            outline: none;
+            border-color: #0a84ff;
+        }
+
         .setting-actions {
             display: flex;
             gap: 8px;
@@ -372,17 +396,17 @@
         <div class="setting-row">
             <span>Zoom</span>
             <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
-            <span class="value" id="zoom-value">100%</span>
+            <input type="number" id="zoom-value" min="100" max="300" value="100" step="1">
         </div>
         <div class="setting-row">
             <span>Horizontal</span>
             <input type="range" id="x-slider" min="-50" max="50" value="0" step="1">
-            <span class="value" id="x-value">0</span>
+            <input type="number" id="x-value" min="-50" max="50" value="0" step="1">
         </div>
         <div class="setting-row">
             <span>Vertical</span>
             <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
-            <span class="value" id="y-value">0</span>
+            <input type="number" id="y-value" min="-50" max="50" value="0" step="1">
         </div>
         <div class="setting-actions">
             <button class="setting-btn" id="replace-btn">Replace photo</button>
@@ -769,21 +793,45 @@
             document.getElementById('zoom-slider').addEventListener('input', function () {
                 if (selectedFrameIndex === null) return;
                 frameAdjustments[selectedFrameIndex].zoom = Number(this.value) / 100;
-                document.getElementById('zoom-value').textContent = `${this.value}%`;
+                document.getElementById('zoom-value').value = this.value;
+                applyFrameAdjustment(selectedFrameIndex);
+            });
+
+            document.getElementById('zoom-value').addEventListener('input', function () {
+                if (selectedFrameIndex === null) return;
+                const val = Math.min(300, Math.max(100, Number(this.value) || 100));
+                frameAdjustments[selectedFrameIndex].zoom = val / 100;
+                document.getElementById('zoom-slider').value = val;
                 applyFrameAdjustment(selectedFrameIndex);
             });
 
             document.getElementById('x-slider').addEventListener('input', function () {
                 if (selectedFrameIndex === null) return;
                 frameAdjustments[selectedFrameIndex].x = Number(this.value);
-                document.getElementById('x-value').textContent = this.value;
+                document.getElementById('x-value').value = this.value;
+                applyFrameAdjustment(selectedFrameIndex);
+            });
+
+            document.getElementById('x-value').addEventListener('input', function () {
+                if (selectedFrameIndex === null) return;
+                const val = Math.min(50, Math.max(-50, Number(this.value) || 0));
+                frameAdjustments[selectedFrameIndex].x = val;
+                document.getElementById('x-slider').value = val;
                 applyFrameAdjustment(selectedFrameIndex);
             });
 
             document.getElementById('y-slider').addEventListener('input', function () {
                 if (selectedFrameIndex === null) return;
                 frameAdjustments[selectedFrameIndex].y = Number(this.value);
-                document.getElementById('y-value').textContent = this.value;
+                document.getElementById('y-value').value = this.value;
+                applyFrameAdjustment(selectedFrameIndex);
+            });
+
+            document.getElementById('y-value').addEventListener('input', function () {
+                if (selectedFrameIndex === null) return;
+                const val = Math.min(50, Math.max(-50, Number(this.value) || 0));
+                frameAdjustments[selectedFrameIndex].y = val;
+                document.getElementById('y-slider').value = val;
                 applyFrameAdjustment(selectedFrameIndex);
             });
 
@@ -986,11 +1034,11 @@
             const adj = frameAdjustments[i];
             const zoomPct = Math.round(adj.zoom * 100);
             document.getElementById('zoom-slider').value = zoomPct;
-            document.getElementById('zoom-value').textContent = `${zoomPct}%`;
+            document.getElementById('zoom-value').value = zoomPct;
             document.getElementById('x-slider').value = adj.x;
-            document.getElementById('x-value').textContent = adj.x;
+            document.getElementById('x-value').value = adj.x;
             document.getElementById('y-slider').value = adj.y;
-            document.getElementById('y-value').textContent = adj.y;
+            document.getElementById('y-value').value = adj.y;
 
             document.getElementById('frame-settings').classList.add('visible');
         }
