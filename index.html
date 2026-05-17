@@ -229,6 +229,44 @@
             font-weight: 600;
         }
 
+        /* Export section */
+        #export-section { display: none; margin-bottom: 16px; }
+
+        .res-picker { display: flex; gap: 6px; margin-bottom: 12px; }
+
+        .res-btn {
+            padding: 0 14px;
+            height: 38px;
+            border: 1px solid #3a3a3c;
+            background: #2c2c2e;
+            color: #f2f2f7;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .res-btn:hover { background: #3a3a3c; }
+
+        .res-btn.active {
+            background: #f2f2f7;
+            color: #1c1c1e;
+            border-color: #f2f2f7;
+            font-weight: 600;
+        }
+
+        #save {
+            padding: 8px 20px;
+            background: #f2f2f7;
+            color: #1c1c1e;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 600;
+        }
+
         #save:hover { background: #d1d1d6; }
 
         #save:disabled {
@@ -289,15 +327,24 @@
         </div>
     </div>
 
+    <div id="export-section">
+        <div class="label">Export</div>
+        <div class="res-picker" id="res-picker"></div>
+        <button id="save" disabled>Export JPEG</button>
+    </div>
+
     <div class="actions">
         <label class="file-label disabled" id="file-label" for="file">Choose photos</label>
         <input type="file" id="file" accept="image/jpeg,image/png" multiple>
-        <button id="save" disabled>Export</button>
     </div>
 
     <script>
-        const EXPORT_WIDTH = 4000;
-        const EXPORT_HEIGHT = 4000;
+        const RESOLUTIONS = [
+            { label: '1K', value: 1000 },
+            { label: '2K', value: 2000 },
+            { label: '3K', value: 3000 },
+            { label: '4K', value: 4000 },
+        ];
         const THUMB_W = 60;
         const THUMB_H = 60;
         const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
@@ -622,6 +669,7 @@
         let selectedFrameIndex = null;
         let borderWidth = 5;
         let outerBorderWidth = 5;
+        let exportResolution = 4000;
 
         function init() {
             const countPicker = document.getElementById('count-picker');
@@ -633,6 +681,19 @@
                 btn.addEventListener('click', () => selectCount(n));
                 countPicker.appendChild(btn);
             }
+
+            const resPicker = document.getElementById('res-picker');
+            RESOLUTIONS.forEach(res => {
+                const btn = document.createElement('button');
+                btn.className = 'res-btn' + (res.value === exportResolution ? ' active' : '');
+                btn.textContent = res.label;
+                btn.addEventListener('click', () => {
+                    exportResolution = res.value;
+                    document.querySelectorAll('.res-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+                resPicker.appendChild(btn);
+            });
 
             document.getElementById('file').addEventListener('change', onFileChange);
             document.getElementById('save').addEventListener('click', saveToJpg);
@@ -784,6 +845,7 @@
             updateFrameBorders();
 
             document.getElementById('grid-controls').style.display = 'block';
+            document.getElementById('export-section').style.display = 'block';
             document.getElementById('file-label').classList.remove('disabled');
         }
 
@@ -928,13 +990,13 @@
         function saveToJpg() {
             const composition = document.getElementById('composition');
             const wrapper = document.getElementById('composition-wrapper');
-            const scale = EXPORT_WIDTH / 600;
+            const scale = exportResolution / 600;
             const scaledBorder = Math.round(borderWidth * scale);
             const scaledOuterBorder = Math.round(outerBorderWidth * scale);
-            const exportTotal = EXPORT_WIDTH + 2 * scaledOuterBorder;
+            const exportTotal = exportResolution + 2 * scaledOuterBorder;
 
-            composition.style.width = `${EXPORT_WIDTH}px`;
-            composition.style.height = `${EXPORT_HEIGHT}px`;
+            composition.style.width = `${exportResolution}px`;
+            composition.style.height = `${exportResolution}px`;
             updateFrameBorders(scaledBorder, scaledOuterBorder);
 
             domtoimage.toJpeg(wrapper, { quality: 1, width: exportTotal, height: exportTotal })
