@@ -255,6 +255,33 @@
             font-weight: 600;
         }
 
+        /* Sections hidden until pattern is selected */
+        #photo-section,
+        #grid-controls,
+        #export-section,
+        #composition-wrapper,
+        #pattern-section { display: none; }
+
+        #photo-section { margin-bottom: 24px; }
+        #grid-controls { margin-bottom: 16px; }
+
+        #grid-controls .setting-row { width: 600px; }
+
+        #pattern-section.visible,
+        #photo-section.visible,
+        #grid-controls.visible,
+        #export-section.visible { display: block; }
+
+        #composition-wrapper.visible { display: inline-block; }
+
+        /* Composition + frame settings side by side */
+        #composition-area {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
         /* Export section */
         #export-section { display: none; margin-bottom: 16px; }
 
@@ -367,28 +394,28 @@
         <div class="pattern-list" id="pattern-list"></div>
     </div>
 
-    <div id="photo-section" style="display:none; margin-bottom:24px;">
+    <div id="photo-section">
         <div class="label">Photos</div>
         <label class="file-label" id="file-label" for="file">Choose photos</label>
         <input type="file" id="file" accept="image/jpeg,image/png" multiple>
     </div>
 
-    <div id="grid-controls" style="display:none; margin-bottom:16px;">
+    <div id="grid-controls">
         <div class="label">Grid</div>
-        <div class="setting-row" style="width:600px;">
+        <div class="setting-row">
             <span>Line width</span>
             <input type="range" id="border-slider" min="0" max="30" value="5" step="1">
             <input type="number" id="border-value" min="0" max="30" value="5" step="1">
         </div>
-        <div class="setting-row" style="width:600px;">
+        <div class="setting-row">
             <span>Outer border</span>
             <input type="range" id="outer-border-slider" min="0" max="30" value="5" step="1">
             <input type="number" id="outer-border-value" min="0" max="30" value="5" step="1">
         </div>
     </div>
 
-    <div style="display:flex; align-items:flex-start; gap:16px; margin-bottom:16px;">
-        <div id="composition-wrapper" style="display:none;">
+    <div id="composition-area">
+        <div id="composition-wrapper">
             <div id="composition"></div>
         </div>
 
@@ -876,7 +903,7 @@
                 btn.classList.toggle('active', Number(btn.dataset.count) === n);
             });
             renderPatternPicker(n);
-            document.getElementById('pattern-section').style.display = 'block';
+            document.getElementById('pattern-section').classList.add('visible');
         }
 
         function renderPatternPicker(count) {
@@ -972,10 +999,10 @@
             renderFrames(loadedImages);
             updateFrameBorders();
 
-            document.getElementById('composition-wrapper').style.display = 'inline-block';
-            document.getElementById('photo-section').style.display = 'block';
-            document.getElementById('grid-controls').style.display = 'block';
-            document.getElementById('export-section').style.display = 'block';
+            document.getElementById('composition-wrapper').classList.add('visible');
+            document.getElementById('photo-section').classList.add('visible');
+            document.getElementById('grid-controls').classList.add('visible');
+            document.getElementById('export-section').classList.add('visible');
         }
 
         function onFileChange() {
