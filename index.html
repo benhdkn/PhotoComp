@@ -96,7 +96,40 @@
             background-repeat: no-repeat;
             background-position: center;
             border: 5px solid white;
+            cursor: pointer;
         }
+
+        .frame.selected {
+            box-shadow: inset 0 0 0 3px #0a84ff;
+        }
+
+        .frame-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.75);
+            border-radius: 6px;
+            padding: 5px 8px;
+            white-space: nowrap;
+        }
+
+        .frame.selected .frame-controls { display: flex; }
+
+        .frame-btn {
+            background: none;
+            border: none;
+            color: #f2f2f7;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .frame-btn:hover { background: rgba(255, 255, 255, 0.15); }
 
         /* Actions */
         .actions { display: flex; gap: 12px; align-items: center; }
@@ -499,6 +532,7 @@
 
             document.getElementById('file').addEventListener('change', onFileChange);
             document.getElementById('save').addEventListener('click', saveToJpg);
+            document.addEventListener('click', deselectAll);
         }
 
         function selectCount(n) {
@@ -580,6 +614,25 @@
                 frame.style.left = `${f.left}%`;
                 frame.style.width = `${f.width}%`;
                 frame.style.height = `${f.height}%`;
+
+                const controls = document.createElement('div');
+                controls.className = 'frame-controls';
+                controls.innerHTML = `
+                    <button class="frame-btn" data-action="replace">Replace</button>
+                    <button class="frame-btn" data-action="clear">Clear</button>
+                `;
+                frame.appendChild(controls);
+
+                frame.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = e.target.dataset.action;
+                    if (action === 'clear') { clearFrame(i); return; }
+                    if (action === 'replace') { replaceFrame(i); return; }
+                    const isSelected = frame.classList.contains('selected');
+                    deselectAll();
+                    if (!isSelected) frame.classList.add('selected');
+                });
+
                 composition.appendChild(frame);
             });
 
@@ -599,15 +652,13 @@
 
             if (!files.length) return;
 
-            const startIndex = loadedImages.length;
-            const slotsLeft = currentPattern.frames.length - startIndex;
+            const emptySlots = getEmptySlots();
+            if (!emptySlots.length) return;
 
-            if (slotsLeft <= 0) return;
-
-            loadImages(files.slice(0, slotsLeft))
+            loadImages(files.slice(0, emptySlots.length))
                 .then(images => {
                     images.forEach((src, i) => {
-                        loadedImages[startIndex + i] = src;
+                        loadedImages[emptySlots[i]] = src;
                     });
                     renderFrames(loadedImages);
                     document.getElementById('save').disabled = false;
@@ -616,6 +667,45 @@
                     console.error('Failed to load images:', err);
                     alert('Failed to load one or more images.');
                 });
+        }
+
+        function getEmptySlots() {
+            const slots = [];
+            for (let i = 0; i < currentPattern.frames.length; i++) {
+                if (!loadedImages[i]) slots.push(i);
+            }
+            return slots;
+        }
+
+        function clearFrame(i) {
+            loadedImages[i] = null;
+            const frame = document.getElementById(`frame-${i}`);
+            if (frame) {
+                frame.style.backgroundImage = '';
+                frame.classList.remove('selected');
+            }
+        }
+
+        function replaceFrame(i) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg,image/png';
+            input.addEventListener('change', function () {
+                const file = this.files[0];
+                if (!file || !ACCEPTED_TYPES.includes(file.type)) return;
+                loadImages([file])
+                    .then(([src]) => {
+                        loadedImages[i] = src;
+                        renderFrames(loadedImages);
+                        document.getElementById(`frame-${i}`).classList.remove('selected');
+                    })
+                    .catch(err => console.error('Failed to replace image:', err));
+            });
+            input.click();
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('.frame.selected').forEach(f => f.classList.remove('selected'));
         }
 
         function loadImages(files) {
@@ -632,7 +722,8 @@
             if (!currentPattern) return;
             images.forEach((src, i) => {
                 const frame = document.getElementById(`frame-${i}`);
-                if (frame) frame.style.backgroundImage = `url(${src})`;
+                if (!frame) return;
+                frame.style.backgroundImage = src ? `url(${src})` : '';
             });
         }
 
