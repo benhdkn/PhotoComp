@@ -81,18 +81,25 @@
         .pattern-thumb.active span { color: #f2f2f7; }
 
         /* Composition */
+        #composition-wrapper {
+            display: inline-block;
+            border: 5px solid white;
+            margin-bottom: 16px;
+        }
+
         #composition {
             position: relative;
             width: 600px;
             height: 600px;
             background: #2c2c2e;
-            margin-bottom: 16px;
             overflow: hidden;
         }
 
         .frame {
             position: absolute;
-            border: 5px solid white;
+            border-style: solid;
+            border-color: white;
+            border-width: 0;
             cursor: pointer;
             overflow: hidden;
             background-color: #d0d0d0;
@@ -242,7 +249,23 @@
         <div class="pattern-list" id="pattern-list"></div>
     </div>
 
-    <div id="composition"></div>
+    <div id="grid-controls" style="display:none; margin-bottom:16px;">
+        <div class="label">Grid</div>
+        <div class="setting-row" style="width:600px;">
+            <span>Line width</span>
+            <input type="range" id="border-slider" min="0" max="30" value="5" step="1">
+            <span class="value" id="border-value">5px</span>
+        </div>
+        <div class="setting-row" style="width:600px;">
+            <span>Outer border</span>
+            <input type="range" id="outer-border-slider" min="0" max="30" value="5" step="1">
+            <span class="value" id="outer-border-value">5px</span>
+        </div>
+    </div>
+
+    <div id="composition-wrapper">
+        <div id="composition"></div>
+    </div>
 
     <div id="frame-settings">
         <div class="setting-row">
@@ -597,6 +620,8 @@
         let loadedImages = [];
         let frameAdjustments = {};
         let selectedFrameIndex = null;
+        let borderWidth = 5;
+        let outerBorderWidth = 5;
 
         function init() {
             const countPicker = document.getElementById('count-picker');
@@ -643,6 +668,18 @@
             });
 
             document.getElementById('frame-settings').addEventListener('click', e => e.stopPropagation());
+
+            document.getElementById('border-slider').addEventListener('input', function () {
+                borderWidth = Number(this.value);
+                document.getElementById('border-value').textContent = `${borderWidth}px`;
+                updateFrameBorders();
+            });
+
+            document.getElementById('outer-border-slider').addEventListener('input', function () {
+                outerBorderWidth = Number(this.value);
+                document.getElementById('outer-border-value').textContent = `${outerBorderWidth}px`;
+                updateFrameBorders();
+            });
         }
 
         function selectCount(n) {
@@ -744,7 +781,9 @@
             });
 
             renderFrames(loadedImages);
+            updateFrameBorders();
 
+            document.getElementById('grid-controls').style.display = 'block';
             document.getElementById('file-label').classList.remove('disabled');
         }
 
@@ -782,6 +821,29 @@
                 if (!loadedImages[i]) slots.push(i);
             }
             return slots;
+        }
+
+        function getOuterSides(f) {
+            return {
+                top:    f.top < 0.1,
+                left:   f.left < 0.1,
+                bottom: (f.top + f.height) > 99.9,
+                right:  (f.left + f.width) > 99.9,
+            };
+        }
+
+        function updateFrameBorders(innerW = borderWidth, outerW = outerBorderWidth) {
+            if (!currentPattern) return;
+            currentPattern.frames.forEach((f, i) => {
+                const frame = document.getElementById(`frame-${i}`);
+                if (!frame) return;
+                const outer = getOuterSides(f);
+                frame.style.borderTopWidth    = outer.top    ? '0' : `${innerW}px`;
+                frame.style.borderLeftWidth   = outer.left   ? '0' : `${innerW}px`;
+                frame.style.borderBottomWidth = outer.bottom ? '0' : `${innerW}px`;
+                frame.style.borderRightWidth  = outer.right  ? '0' : `${innerW}px`;
+            });
+            document.getElementById('composition-wrapper').style.borderWidth = `${outerW}px`;
         }
 
         function selectFrame(i) {
@@ -865,11 +927,17 @@
 
         function saveToJpg() {
             const composition = document.getElementById('composition');
+            const wrapper = document.getElementById('composition-wrapper');
+            const scale = EXPORT_WIDTH / 600;
+            const scaledBorder = Math.round(borderWidth * scale);
+            const scaledOuterBorder = Math.round(outerBorderWidth * scale);
+            const exportTotal = EXPORT_WIDTH + 2 * scaledOuterBorder;
 
             composition.style.width = `${EXPORT_WIDTH}px`;
             composition.style.height = `${EXPORT_HEIGHT}px`;
+            updateFrameBorders(scaledBorder, scaledOuterBorder);
 
-            domtoimage.toJpeg(composition, { quality: 1, width: EXPORT_WIDTH, height: EXPORT_HEIGHT })
+            domtoimage.toJpeg(wrapper, { quality: 1, width: exportTotal, height: exportTotal })
                 .then(dataUrl => {
                     const link = document.createElement('a');
                     link.download = 'composition.jpeg';
@@ -883,6 +951,7 @@
                 .finally(() => {
                     composition.style.width = '600px';
                     composition.style.height = '600px';
+                    updateFrameBorders();
                 });
         }
 
