@@ -200,11 +200,16 @@ h1 {
    (hidden by its clipping) cast a drop shadow inward. One mitred strip per side,
    plus the bits between a rounded corner and the square corner when both sides are on. */
 .inner-shadow {
+    display: none;
     position: absolute;
     inset: 0;
     pointer-events: none;
     filter: var(--inner-shadow, none);
 }
+
+/* Only present while the inner shadow is on: the hidden casters would otherwise
+   leave faint dark fringes along the cell edges */
+.inner-shadow-on .inner-shadow { display: block; }
 
 .caster { position: absolute; background: black; }
 

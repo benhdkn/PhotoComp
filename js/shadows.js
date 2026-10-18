@@ -67,7 +67,9 @@ export function updateInnerShadow() {
     const css = shadows.length
         ? shadows.map(s => `drop-shadow(${s.x}px ${s.y}px ${s.blur}px ${s.color})`).join(' ')
         : 'none';
-    document.getElementById('composition-wrapper').style.setProperty('--inner-shadow', css);
+    const wrapper = document.getElementById('composition-wrapper');
+    wrapper.style.setProperty('--inner-shadow', css);
+    wrapper.classList.toggle('inner-shadow-on', shadows.length > 0);
 }
 
 // Same shapes as the preview's .caster elements, drawn just outside the (already clipped)
