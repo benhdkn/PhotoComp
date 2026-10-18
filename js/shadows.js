@@ -42,7 +42,7 @@ export function updateShadowShapes() {
 function getOuterShadows() {
     if (!state.shadowSize) return [];
     return [
-        { x: 0, y: 0, blur: state.shadowSize, color: 'rgba(0, 0, 0, 0.75)' },
+        { x: 0, y: 0, blur: state.shadowSize, color: 'rgba(0, 0, 0, 0.8)' },
     ];
 }
 
@@ -58,7 +58,7 @@ export function updateOuterShadow() {
 function getInnerShadows() {
     if (!state.innerShadowSize) return [];
     return [
-        { x: 0, y: 0, blur: state.innerShadowSize, color: 'rgba(0, 0, 0, 0.75)' },
+        { x: 0, y: 0, blur: state.innerShadowSize, color: 'rgba(0, 0, 0, 0.6)' },
     ];
 }
 
