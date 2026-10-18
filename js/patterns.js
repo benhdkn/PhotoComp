@@ -1,737 +1,146 @@
-// Preset layouts per photo count. Frames are rectangles in % of the comp.
+// Preset layouts per photo count. Frames are rectangles in % of the comp, listed in the
+// order photos fill them.
+
+const FULL = { top: 0, left: 0, width: 100, height: 100 };
+const LEFT_HALF = { top: 0, left: 0, width: 50, height: 100 };
+const RIGHT_HALF = { top: 0, left: 50, width: 50, height: 100 };
+const TOP_HALF = { top: 0, left: 0, width: 100, height: 50 };
+const BOTTOM_HALF = { top: 50, left: 0, width: 100, height: 50 };
+
+const round = v => Math.round(v * 100) / 100;
+
+// Start and size of the i-th of n equal parts, rounded so neighbouring edges line up exactly
+function part(start, size, i, n) {
+    const from = round(start + size * i / n);
+    const to = round(start + size * (i + 1) / n);
+    return [from, round(to - from)];
+}
+
+// One photo filling an area
+function cell(area) {
+    return { top: area.top, left: area.left, width: area.width, height: area.height };
+}
+
+// Rows of equal height, with counts[i] photos side by side in row i. Fills row by row.
+function rows(counts, area = FULL) {
+    return counts.flatMap((n, r) => {
+        const [top, height] = part(area.top, area.height, r, counts.length);
+        return Array.from({ length: n }, (_, c) => {
+            const [left, width] = part(area.left, area.width, c, n);
+            return { top, left, width, height };
+        });
+    });
+}
+
+// Columns of equal width, with counts[i] photos stacked in column i. Fills column by column.
+function cols(counts, area = FULL) {
+    return counts.flatMap((n, c) => {
+        const [left, width] = part(area.left, area.width, c, counts.length);
+        return Array.from({ length: n }, (_, r) => {
+            const [top, height] = part(area.top, area.height, r, n);
+            return { top, left, width, height };
+        });
+    });
+}
+
+// columns × rows grid, filled row by row
+function grid(columns, rowCount, area = FULL) {
+    return rows(Array(rowCount).fill(columns), area);
+}
+
+const layout = (id, name, frames) => ({ id, name, frames });
 
 export const GRID_PATTERNS = {
     2: [
-        {
-            id: '2-cols', name: 'Side by side',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 100 },
-                { top: 0, left: 50, width: 50, height: 100 },
-            ]
-        },
-        {
-            id: '2-rows', name: 'Stacked',
-            frames: [
-                { top: 0, left: 0, width: 100, height: 50 },
-                { top: 50, left: 0, width: 100, height: 50 },
-            ]
-        },
+        layout('2-cols', 'Side by side', cols([1, 1])),
+        layout('2-rows', 'Stacked', rows([1, 1])),
     ],
     3: [
-        {
-            id: '3-1left-2right', name: '1 left + 2 right',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 100 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 50, width: 50, height: 50 },
-            ]
-        },
-        {
-            id: '3-2left-1right', name: '2 left + 1 right',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 50, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 100 },
-            ]
-        },
-        {
-            id: '3-cols', name: '3 columns',
-            frames: [
-                { top: 0, left: 0, width: 33.33, height: 100 },
-                { top: 0, left: 33.33, width: 33.34, height: 100 },
-                { top: 0, left: 66.67, width: 33.33, height: 100 },
-            ]
-        },
-        {
-            id: '3-2top-1bottom', name: '2 top + 1 bottom',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 0, width: 100, height: 50 },
-            ]
-        },
+        layout('3-1left-2right', '1 left + 2 right', cols([1, 2])),
+        layout('3-2left-1right', '2 left + 1 right', cols([2, 1])),
+        layout('3-cols', '3 columns', rows([3])),
+        layout('3-2top-1bottom', '2 top + 1 bottom', rows([2, 1])),
     ],
     4: [
-        {
-            id: '4-2x2', name: '2×2 grid',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 0, width: 50, height: 50 },
-                { top: 50, left: 50, width: 50, height: 50 },
-            ]
-        },
-        {
-            id: '4-1left-3right', name: '1 left + 3 right',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 100 },
-                { top: 0, left: 50, width: 50, height: 33.33 },
-                { top: 33.33, left: 50, width: 50, height: 33.34 },
-                { top: 66.67, left: 50, width: 50, height: 33.33 },
-            ]
-        },
-        {
-            id: '4-3left-1right', name: '3 left + 1 right',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 33.33 },
-                { top: 33.33, left: 0, width: 50, height: 33.34 },
-                { top: 66.67, left: 0, width: 50, height: 33.33 },
-                { top: 0, left: 50, width: 50, height: 100 },
-            ]
-        },
-        {
-            id: '4-1top-3bottom', name: '1 top + 3 bottom',
-            frames: [
-                { top: 0, left: 0, width: 100, height: 50 },
-                { top: 50, left: 0, width: 33.33, height: 50 },
-                { top: 50, left: 33.33, width: 33.34, height: 50 },
-                { top: 50, left: 66.67, width: 33.33, height: 50 },
-            ]
-        },
+        layout('4-2x2', '2×2 grid', grid(2, 2)),
+        layout('4-1left-3right', '1 left + 3 right', cols([1, 3])),
+        layout('4-3left-1right', '3 left + 1 right', cols([3, 1])),
+        layout('4-1top-3bottom', '1 top + 3 bottom', rows([1, 3])),
     ],
     5: [
-        {
-            id: '5-2top-3bottom', name: '2 top + 3 bottom',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 0, width: 33.33, height: 50 },
-                { top: 50, left: 33.33, width: 33.34, height: 50 },
-                { top: 50, left: 66.67, width: 33.33, height: 50 },
-            ]
-        },
-        {
-            id: '5-3top-2bottom', name: '3 top + 2 bottom',
-            frames: [
-                { top: 0, left: 0, width: 33.33, height: 50 },
-                { top: 0, left: 33.33, width: 33.34, height: 50 },
-                { top: 0, left: 66.67, width: 33.33, height: 50 },
-                { top: 50, left: 0, width: 50, height: 50 },
-                { top: 50, left: 50, width: 50, height: 50 },
-            ]
-        },
-        {
-            id: '5-1large-4small', name: '1 large + 4 small',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 100 },
-                { top: 0, left: 50, width: 25, height: 50 },
-                { top: 0, left: 75, width: 25, height: 50 },
-                { top: 50, left: 50, width: 25, height: 50 },
-                { top: 50, left: 75, width: 25, height: 50 },
-            ]
-        },
+        layout('5-2top-3bottom', '2 top + 3 bottom', rows([2, 3])),
+        layout('5-3top-2bottom', '3 top + 2 bottom', rows([3, 2])),
+        layout('5-1large-4small', '1 large + 4 small', [cell(LEFT_HALF), ...grid(2, 2, RIGHT_HALF)]),
     ],
     6: [
-        {
-            id: '6-3x2', name: '3×2 grid',
-            frames: [
-                { top: 0, left: 0, width: 33.33, height: 50 },
-                { top: 0, left: 33.33, width: 33.34, height: 50 },
-                { top: 0, left: 66.67, width: 33.33, height: 50 },
-                { top: 50, left: 0, width: 33.33, height: 50 },
-                { top: 50, left: 33.33, width: 33.34, height: 50 },
-                { top: 50, left: 66.67, width: 33.33, height: 50 },
-            ]
-        },
-        {
-            id: '6-2x3', name: '2×3 grid',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 33.33 },
-                { top: 0, left: 50, width: 50, height: 33.33 },
-                { top: 33.33, left: 0, width: 50, height: 33.34 },
-                { top: 33.33, left: 50, width: 50, height: 33.34 },
-                { top: 66.67, left: 0, width: 50, height: 33.33 },
-                { top: 66.67, left: 50, width: 50, height: 33.33 },
-            ]
-        },
-        {
-            id: '6-2large-4small', name: '2 top + 4 bottom',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 0, width: 25, height: 50 },
-                { top: 50, left: 25, width: 25, height: 50 },
-                { top: 50, left: 50, width: 25, height: 50 },
-                { top: 50, left: 75, width: 25, height: 50 },
-            ]
-        },
+        layout('6-3x2', '3×2 grid', grid(3, 2)),
+        layout('6-2x3', '2×3 grid', grid(2, 3)),
+        layout('6-2large-4small', '2 top + 4 bottom', rows([2, 4])),
     ],
     7: [
-        {
-            id: '7-3top-4bottom', name: '3 top + 4 bottom',
-            frames: [
-                { top: 0, left: 0, width: 33.33, height: 50 },
-                { top: 0, left: 33.33, width: 33.34, height: 50 },
-                { top: 0, left: 66.67, width: 33.33, height: 50 },
-                { top: 50, left: 0, width: 25, height: 50 },
-                { top: 50, left: 25, width: 25, height: 50 },
-                { top: 50, left: 50, width: 25, height: 50 },
-                { top: 50, left: 75, width: 25, height: 50 },
-            ]
-        },
-        {
-            id: '7-4top-3bottom', name: '4 top + 3 bottom',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 50 },
-                { top: 0, left: 25, width: 25, height: 50 },
-                { top: 0, left: 50, width: 25, height: 50 },
-                { top: 0, left: 75, width: 25, height: 50 },
-                { top: 50, left: 0, width: 33.33, height: 50 },
-                { top: 50, left: 33.33, width: 33.34, height: 50 },
-                { top: 50, left: 66.67, width: 33.33, height: 50 },
-            ]
-        },
-        {
-            id: '7-1large-6small', name: '1 large + 6 small',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 100 },
-                { top: 0, left: 50, width: 16.67, height: 50 },
-                { top: 0, left: 66.67, width: 16.67, height: 50 },
-                { top: 0, left: 83.33, width: 16.67, height: 50 },
-                { top: 50, left: 50, width: 16.67, height: 50 },
-                { top: 50, left: 66.67, width: 16.67, height: 50 },
-                { top: 50, left: 83.33, width: 16.67, height: 50 },
-            ]
-        },
+        layout('7-3top-4bottom', '3 top + 4 bottom', rows([3, 4])),
+        layout('7-4top-3bottom', '4 top + 3 bottom', rows([4, 3])),
+        layout('7-1large-6small', '1 large + 6 small', [cell(LEFT_HALF), ...grid(3, 2, RIGHT_HALF)]),
     ],
     8: [
-        {
-            id: '8-4x2', name: '4×2 grid',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 50 },
-                { top: 0, left: 25, width: 25, height: 50 },
-                { top: 0, left: 50, width: 25, height: 50 },
-                { top: 0, left: 75, width: 25, height: 50 },
-                { top: 50, left: 0, width: 25, height: 50 },
-                { top: 50, left: 25, width: 25, height: 50 },
-                { top: 50, left: 50, width: 25, height: 50 },
-                { top: 50, left: 75, width: 25, height: 50 },
-            ]
-        },
-        {
-            id: '8-2x4', name: '2×4 grid',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 25 },
-                { top: 0, left: 50, width: 50, height: 25 },
-                { top: 25, left: 0, width: 50, height: 25 },
-                { top: 25, left: 50, width: 50, height: 25 },
-                { top: 50, left: 0, width: 50, height: 25 },
-                { top: 50, left: 50, width: 50, height: 25 },
-                { top: 75, left: 0, width: 50, height: 25 },
-                { top: 75, left: 50, width: 50, height: 25 },
-            ]
-        },
-        {
-            id: '8-2large-6small', name: '2 top + 6 bottom',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 0, width: 16.67, height: 50 },
-                { top: 50, left: 16.67, width: 16.67, height: 50 },
-                { top: 50, left: 33.33, width: 16.67, height: 50 },
-                { top: 50, left: 50, width: 16.67, height: 50 },
-                { top: 50, left: 66.67, width: 16.67, height: 50 },
-                { top: 50, left: 83.33, width: 16.67, height: 50 },
-            ]
-        },
+        layout('8-4x2', '4×2 grid', grid(4, 2)),
+        layout('8-2x4', '2×4 grid', grid(2, 4)),
+        layout('8-2large-6small', '2 top + 6 bottom', rows([2, 6])),
     ],
     9: [
-        {
-            id: '9-3x3', name: '3×3 grid',
-            frames: [
-                { top: 0, left: 0, width: 33.33, height: 33.33 },
-                { top: 0, left: 33.33, width: 33.34, height: 33.33 },
-                { top: 0, left: 66.67, width: 33.33, height: 33.33 },
-                { top: 33.33, left: 0, width: 33.33, height: 33.34 },
-                { top: 33.33, left: 33.33, width: 33.34, height: 33.34 },
-                { top: 33.33, left: 66.67, width: 33.33, height: 33.34 },
-                { top: 66.67, left: 0, width: 33.33, height: 33.33 },
-                { top: 66.67, left: 33.33, width: 33.34, height: 33.33 },
-                { top: 66.67, left: 66.67, width: 33.33, height: 33.33 },
-            ]
-        },
-        {
-            id: '9-1large-8small', name: '1 large + 8 small',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 25, height: 50 },
-                { top: 0, left: 75, width: 25, height: 50 },
-                { top: 50, left: 0, width: 16.67, height: 50 },
-                { top: 50, left: 16.67, width: 16.67, height: 50 },
-                { top: 50, left: 33.33, width: 16.67, height: 50 },
-                { top: 50, left: 50, width: 16.67, height: 50 },
-                { top: 50, left: 66.67, width: 16.67, height: 50 },
-                { top: 50, left: 83.33, width: 16.67, height: 50 },
-            ]
-        },
+        layout('9-3x3', '3×3 grid', grid(3, 3)),
+        layout('9-1large-8small', '1 large + 8 small', [
+            cell({ top: 0, left: 0, width: 50, height: 50 }),
+            ...rows([2], { top: 0, left: 50, width: 50, height: 50 }),
+            ...rows([6], BOTTOM_HALF),
+        ]),
     ],
     10: [
-        {
-            id: '10-5x2', name: '5×2 grid',
-            frames: [
-                { top: 0, left: 0, width: 20, height: 50 },
-                { top: 0, left: 20, width: 20, height: 50 },
-                { top: 0, left: 40, width: 20, height: 50 },
-                { top: 0, left: 60, width: 20, height: 50 },
-                { top: 0, left: 80, width: 20, height: 50 },
-                { top: 50, left: 0, width: 20, height: 50 },
-                { top: 50, left: 20, width: 20, height: 50 },
-                { top: 50, left: 40, width: 20, height: 50 },
-                { top: 50, left: 60, width: 20, height: 50 },
-                { top: 50, left: 80, width: 20, height: 50 },
-            ]
-        },
-        {
-            id: '10-2x5', name: '2×5 grid',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 20 },
-                { top: 0, left: 50, width: 50, height: 20 },
-                { top: 20, left: 0, width: 50, height: 20 },
-                { top: 20, left: 50, width: 50, height: 20 },
-                { top: 40, left: 0, width: 50, height: 20 },
-                { top: 40, left: 50, width: 50, height: 20 },
-                { top: 60, left: 0, width: 50, height: 20 },
-                { top: 60, left: 50, width: 50, height: 20 },
-                { top: 80, left: 0, width: 50, height: 20 },
-                { top: 80, left: 50, width: 50, height: 20 },
-            ]
-        },
-        {
-            id: '10-4top-6bottom', name: '4 top + 6 bottom',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 50 },
-                { top: 0, left: 25, width: 25, height: 50 },
-                { top: 0, left: 50, width: 25, height: 50 },
-                { top: 0, left: 75, width: 25, height: 50 },
-                { top: 50, left: 0, width: 16.67, height: 50 },
-                { top: 50, left: 16.67, width: 16.67, height: 50 },
-                { top: 50, left: 33.33, width: 16.67, height: 50 },
-                { top: 50, left: 50, width: 16.67, height: 50 },
-                { top: 50, left: 66.67, width: 16.67, height: 50 },
-                { top: 50, left: 83.33, width: 16.67, height: 50 },
-            ]
-        },
+        layout('10-5x2', '5×2 grid', grid(5, 2)),
+        layout('10-2x5', '2×5 grid', grid(2, 5)),
+        layout('10-4top-6bottom', '4 top + 6 bottom', rows([4, 6])),
     ],
     11: [
-        {
-            id: '11-4-3-4', name: '4-3-4 rows',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 33.33 },
-                { top: 0, left: 25, width: 25, height: 33.33 },
-                { top: 0, left: 50, width: 25, height: 33.33 },
-                { top: 0, left: 75, width: 25, height: 33.33 },
-                { top: 33.33, left: 0, width: 33.33, height: 33.34 },
-                { top: 33.33, left: 33.33, width: 33.34, height: 33.34 },
-                { top: 33.33, left: 66.67, width: 33.33, height: 33.34 },
-                { top: 66.67, left: 0, width: 25, height: 33.33 },
-                { top: 66.67, left: 25, width: 25, height: 33.33 },
-                { top: 66.67, left: 50, width: 25, height: 33.33 },
-                { top: 66.67, left: 75, width: 25, height: 33.33 },
-            ]
-        },
-        {
-            id: '11-1top-10bottom', name: '1 top + 10 bottom',
-            frames: [
-                { top: 0, left: 0, width: 100, height: 50 },
-                { top: 50, left: 0, width: 20, height: 25 },
-                { top: 50, left: 20, width: 20, height: 25 },
-                { top: 50, left: 40, width: 20, height: 25 },
-                { top: 50, left: 60, width: 20, height: 25 },
-                { top: 50, left: 80, width: 20, height: 25 },
-                { top: 75, left: 0, width: 20, height: 25 },
-                { top: 75, left: 20, width: 20, height: 25 },
-                { top: 75, left: 40, width: 20, height: 25 },
-                { top: 75, left: 60, width: 20, height: 25 },
-                { top: 75, left: 80, width: 20, height: 25 },
-            ]
-        },
-        {
-            id: '11-1large-10small', name: '1 large + 10 small',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 100 },
-                { top: 0, left: 50, width: 25, height: 20 },
-                { top: 0, left: 75, width: 25, height: 20 },
-                { top: 20, left: 50, width: 25, height: 20 },
-                { top: 20, left: 75, width: 25, height: 20 },
-                { top: 40, left: 50, width: 25, height: 20 },
-                { top: 40, left: 75, width: 25, height: 20 },
-                { top: 60, left: 50, width: 25, height: 20 },
-                { top: 60, left: 75, width: 25, height: 20 },
-                { top: 80, left: 50, width: 25, height: 20 },
-                { top: 80, left: 75, width: 25, height: 20 },
-            ]
-        },
+        layout('11-4-3-4', '4-3-4 rows', rows([4, 3, 4])),
+        layout('11-1top-10bottom', '1 top + 10 bottom', [cell(TOP_HALF), ...grid(5, 2, BOTTOM_HALF)]),
+        layout('11-1large-10small', '1 large + 10 small', [cell(LEFT_HALF), ...grid(2, 5, RIGHT_HALF)]),
     ],
     12: [
-        {
-            id: '12-4x3', name: '4×3 grid',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 33.33 },
-                { top: 0, left: 25, width: 25, height: 33.33 },
-                { top: 0, left: 50, width: 25, height: 33.33 },
-                { top: 0, left: 75, width: 25, height: 33.33 },
-                { top: 33.33, left: 0, width: 25, height: 33.34 },
-                { top: 33.33, left: 25, width: 25, height: 33.34 },
-                { top: 33.33, left: 50, width: 25, height: 33.34 },
-                { top: 33.33, left: 75, width: 25, height: 33.34 },
-                { top: 66.67, left: 0, width: 25, height: 33.33 },
-                { top: 66.67, left: 25, width: 25, height: 33.33 },
-                { top: 66.67, left: 50, width: 25, height: 33.33 },
-                { top: 66.67, left: 75, width: 25, height: 33.33 },
-            ]
-        },
-        {
-            id: '12-3x4', name: '3×4 grid',
-            frames: [
-                { top: 0, left: 0, width: 33.33, height: 25 },
-                { top: 0, left: 33.33, width: 33.34, height: 25 },
-                { top: 0, left: 66.67, width: 33.33, height: 25 },
-                { top: 25, left: 0, width: 33.33, height: 25 },
-                { top: 25, left: 33.33, width: 33.34, height: 25 },
-                { top: 25, left: 66.67, width: 33.33, height: 25 },
-                { top: 50, left: 0, width: 33.33, height: 25 },
-                { top: 50, left: 33.33, width: 33.34, height: 25 },
-                { top: 50, left: 66.67, width: 33.33, height: 25 },
-                { top: 75, left: 0, width: 33.33, height: 25 },
-                { top: 75, left: 33.33, width: 33.34, height: 25 },
-                { top: 75, left: 66.67, width: 33.33, height: 25 },
-            ]
-        },
-        {
-            id: '12-6x2', name: '6×2 grid',
-            frames: [
-                { top: 0, left: 0, width: 16.67, height: 50 },
-                { top: 0, left: 16.67, width: 16.66, height: 50 },
-                { top: 0, left: 33.33, width: 16.67, height: 50 },
-                { top: 0, left: 50, width: 16.67, height: 50 },
-                { top: 0, left: 66.67, width: 16.66, height: 50 },
-                { top: 0, left: 83.33, width: 16.67, height: 50 },
-                { top: 50, left: 0, width: 16.67, height: 50 },
-                { top: 50, left: 16.67, width: 16.66, height: 50 },
-                { top: 50, left: 33.33, width: 16.67, height: 50 },
-                { top: 50, left: 50, width: 16.67, height: 50 },
-                { top: 50, left: 66.67, width: 16.66, height: 50 },
-                { top: 50, left: 83.33, width: 16.67, height: 50 },
-            ]
-        },
-        {
-            id: '12-2top-10bottom', name: '2 top + 10 bottom',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 0, width: 20, height: 25 },
-                { top: 50, left: 20, width: 20, height: 25 },
-                { top: 50, left: 40, width: 20, height: 25 },
-                { top: 50, left: 60, width: 20, height: 25 },
-                { top: 50, left: 80, width: 20, height: 25 },
-                { top: 75, left: 0, width: 20, height: 25 },
-                { top: 75, left: 20, width: 20, height: 25 },
-                { top: 75, left: 40, width: 20, height: 25 },
-                { top: 75, left: 60, width: 20, height: 25 },
-                { top: 75, left: 80, width: 20, height: 25 },
-            ]
-        },
+        layout('12-4x3', '4×3 grid', grid(4, 3)),
+        layout('12-3x4', '3×4 grid', grid(3, 4)),
+        layout('12-6x2', '6×2 grid', grid(6, 2)),
+        layout('12-2top-10bottom', '2 top + 10 bottom', [...rows([2], TOP_HALF), ...grid(5, 2, BOTTOM_HALF)]),
     ],
     13: [
-        {
-            id: '13-4-5-4', name: '4-5-4 rows',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 33.33 },
-                { top: 0, left: 25, width: 25, height: 33.33 },
-                { top: 0, left: 50, width: 25, height: 33.33 },
-                { top: 0, left: 75, width: 25, height: 33.33 },
-                { top: 33.33, left: 0, width: 20, height: 33.34 },
-                { top: 33.33, left: 20, width: 20, height: 33.34 },
-                { top: 33.33, left: 40, width: 20, height: 33.34 },
-                { top: 33.33, left: 60, width: 20, height: 33.34 },
-                { top: 33.33, left: 80, width: 20, height: 33.34 },
-                { top: 66.67, left: 0, width: 25, height: 33.33 },
-                { top: 66.67, left: 25, width: 25, height: 33.33 },
-                { top: 66.67, left: 50, width: 25, height: 33.33 },
-                { top: 66.67, left: 75, width: 25, height: 33.33 },
-            ]
-        },
-        {
-            id: '13-1center-12around', name: '1 centre + 12 around',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 25 },
-                { top: 0, left: 25, width: 25, height: 25 },
-                { top: 0, left: 50, width: 25, height: 25 },
-                { top: 0, left: 75, width: 25, height: 25 },
-                { top: 25, left: 0, width: 25, height: 25 },
-                { top: 25, left: 25, width: 50, height: 50 },
-                { top: 25, left: 75, width: 25, height: 25 },
-                { top: 50, left: 0, width: 25, height: 25 },
-                { top: 50, left: 75, width: 25, height: 25 },
-                { top: 75, left: 0, width: 25, height: 25 },
-                { top: 75, left: 25, width: 25, height: 25 },
-                { top: 75, left: 50, width: 25, height: 25 },
-                { top: 75, left: 75, width: 25, height: 25 },
-            ]
-        },
-        {
-            id: '13-1top-12bottom', name: '1 top + 12 bottom',
-            frames: [
-                { top: 0, left: 0, width: 100, height: 50 },
-                { top: 50, left: 0, width: 16.67, height: 25 },
-                { top: 50, left: 16.67, width: 16.66, height: 25 },
-                { top: 50, left: 33.33, width: 16.67, height: 25 },
-                { top: 50, left: 50, width: 16.67, height: 25 },
-                { top: 50, left: 66.67, width: 16.66, height: 25 },
-                { top: 50, left: 83.33, width: 16.67, height: 25 },
-                { top: 75, left: 0, width: 16.67, height: 25 },
-                { top: 75, left: 16.67, width: 16.66, height: 25 },
-                { top: 75, left: 33.33, width: 16.67, height: 25 },
-                { top: 75, left: 50, width: 16.67, height: 25 },
-                { top: 75, left: 66.67, width: 16.66, height: 25 },
-                { top: 75, left: 83.33, width: 16.67, height: 25 },
-            ]
-        },
+        layout('13-4-5-4', '4-5-4 rows', rows([4, 5, 4])),
+        // 4×4 grid whose centre 2×2 is one large photo
+        layout('13-1center-12around', '1 centre + 12 around', [
+            ...rows([4], { top: 0, left: 0, width: 100, height: 25 }),
+            cell({ top: 25, left: 0, width: 25, height: 25 }),
+            cell({ top: 25, left: 25, width: 50, height: 50 }),
+            cell({ top: 25, left: 75, width: 25, height: 25 }),
+            cell({ top: 50, left: 0, width: 25, height: 25 }),
+            cell({ top: 50, left: 75, width: 25, height: 25 }),
+            ...rows([4], { top: 75, left: 0, width: 100, height: 25 }),
+        ]),
+        layout('13-1top-12bottom', '1 top + 12 bottom', [cell(TOP_HALF), ...grid(6, 2, BOTTOM_HALF)]),
     ],
     14: [
-        {
-            id: '14-7x2', name: '7×2 grid',
-            frames: [
-                { top: 0, left: 0, width: 14.29, height: 50 },
-                { top: 0, left: 14.29, width: 14.28, height: 50 },
-                { top: 0, left: 28.57, width: 14.29, height: 50 },
-                { top: 0, left: 42.86, width: 14.28, height: 50 },
-                { top: 0, left: 57.14, width: 14.29, height: 50 },
-                { top: 0, left: 71.43, width: 14.28, height: 50 },
-                { top: 0, left: 85.71, width: 14.29, height: 50 },
-                { top: 50, left: 0, width: 14.29, height: 50 },
-                { top: 50, left: 14.29, width: 14.28, height: 50 },
-                { top: 50, left: 28.57, width: 14.29, height: 50 },
-                { top: 50, left: 42.86, width: 14.28, height: 50 },
-                { top: 50, left: 57.14, width: 14.29, height: 50 },
-                { top: 50, left: 71.43, width: 14.28, height: 50 },
-                { top: 50, left: 85.71, width: 14.29, height: 50 },
-            ]
-        },
-        {
-            id: '14-2x7', name: '2×7 grid',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 14.29 },
-                { top: 0, left: 50, width: 50, height: 14.29 },
-                { top: 14.29, left: 0, width: 50, height: 14.28 },
-                { top: 14.29, left: 50, width: 50, height: 14.28 },
-                { top: 28.57, left: 0, width: 50, height: 14.29 },
-                { top: 28.57, left: 50, width: 50, height: 14.29 },
-                { top: 42.86, left: 0, width: 50, height: 14.28 },
-                { top: 42.86, left: 50, width: 50, height: 14.28 },
-                { top: 57.14, left: 0, width: 50, height: 14.29 },
-                { top: 57.14, left: 50, width: 50, height: 14.29 },
-                { top: 71.43, left: 0, width: 50, height: 14.28 },
-                { top: 71.43, left: 50, width: 50, height: 14.28 },
-                { top: 85.71, left: 0, width: 50, height: 14.29 },
-                { top: 85.71, left: 50, width: 50, height: 14.29 },
-            ]
-        },
-        {
-            id: '14-5-4-5', name: '5-4-5 rows',
-            frames: [
-                { top: 0, left: 0, width: 20, height: 33.33 },
-                { top: 0, left: 20, width: 20, height: 33.33 },
-                { top: 0, left: 40, width: 20, height: 33.33 },
-                { top: 0, left: 60, width: 20, height: 33.33 },
-                { top: 0, left: 80, width: 20, height: 33.33 },
-                { top: 33.33, left: 0, width: 25, height: 33.34 },
-                { top: 33.33, left: 25, width: 25, height: 33.34 },
-                { top: 33.33, left: 50, width: 25, height: 33.34 },
-                { top: 33.33, left: 75, width: 25, height: 33.34 },
-                { top: 66.67, left: 0, width: 20, height: 33.33 },
-                { top: 66.67, left: 20, width: 20, height: 33.33 },
-                { top: 66.67, left: 40, width: 20, height: 33.33 },
-                { top: 66.67, left: 60, width: 20, height: 33.33 },
-                { top: 66.67, left: 80, width: 20, height: 33.33 },
-            ]
-        },
-        {
-            id: '14-2top-12bottom', name: '2 top + 12 bottom',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 50 },
-                { top: 0, left: 50, width: 50, height: 50 },
-                { top: 50, left: 0, width: 16.67, height: 25 },
-                { top: 50, left: 16.67, width: 16.66, height: 25 },
-                { top: 50, left: 33.33, width: 16.67, height: 25 },
-                { top: 50, left: 50, width: 16.67, height: 25 },
-                { top: 50, left: 66.67, width: 16.66, height: 25 },
-                { top: 50, left: 83.33, width: 16.67, height: 25 },
-                { top: 75, left: 0, width: 16.67, height: 25 },
-                { top: 75, left: 16.67, width: 16.66, height: 25 },
-                { top: 75, left: 33.33, width: 16.67, height: 25 },
-                { top: 75, left: 50, width: 16.67, height: 25 },
-                { top: 75, left: 66.67, width: 16.66, height: 25 },
-                { top: 75, left: 83.33, width: 16.67, height: 25 },
-            ]
-        },
+        layout('14-7x2', '7×2 grid', grid(7, 2)),
+        layout('14-2x7', '2×7 grid', grid(2, 7)),
+        layout('14-5-4-5', '5-4-5 rows', rows([5, 4, 5])),
+        layout('14-2top-12bottom', '2 top + 12 bottom', [...rows([2], TOP_HALF), ...grid(6, 2, BOTTOM_HALF)]),
     ],
     15: [
-        {
-            id: '15-5x3', name: '5×3 grid',
-            frames: [
-                { top: 0, left: 0, width: 20, height: 33.33 },
-                { top: 0, left: 20, width: 20, height: 33.33 },
-                { top: 0, left: 40, width: 20, height: 33.33 },
-                { top: 0, left: 60, width: 20, height: 33.33 },
-                { top: 0, left: 80, width: 20, height: 33.33 },
-                { top: 33.33, left: 0, width: 20, height: 33.34 },
-                { top: 33.33, left: 20, width: 20, height: 33.34 },
-                { top: 33.33, left: 40, width: 20, height: 33.34 },
-                { top: 33.33, left: 60, width: 20, height: 33.34 },
-                { top: 33.33, left: 80, width: 20, height: 33.34 },
-                { top: 66.67, left: 0, width: 20, height: 33.33 },
-                { top: 66.67, left: 20, width: 20, height: 33.33 },
-                { top: 66.67, left: 40, width: 20, height: 33.33 },
-                { top: 66.67, left: 60, width: 20, height: 33.33 },
-                { top: 66.67, left: 80, width: 20, height: 33.33 },
-            ]
-        },
-        {
-            id: '15-3x5', name: '3×5 grid',
-            frames: [
-                { top: 0, left: 0, width: 33.33, height: 20 },
-                { top: 0, left: 33.33, width: 33.34, height: 20 },
-                { top: 0, left: 66.67, width: 33.33, height: 20 },
-                { top: 20, left: 0, width: 33.33, height: 20 },
-                { top: 20, left: 33.33, width: 33.34, height: 20 },
-                { top: 20, left: 66.67, width: 33.33, height: 20 },
-                { top: 40, left: 0, width: 33.33, height: 20 },
-                { top: 40, left: 33.33, width: 33.34, height: 20 },
-                { top: 40, left: 66.67, width: 33.33, height: 20 },
-                { top: 60, left: 0, width: 33.33, height: 20 },
-                { top: 60, left: 33.33, width: 33.34, height: 20 },
-                { top: 60, left: 66.67, width: 33.33, height: 20 },
-                { top: 80, left: 0, width: 33.33, height: 20 },
-                { top: 80, left: 33.33, width: 33.34, height: 20 },
-                { top: 80, left: 66.67, width: 33.33, height: 20 },
-            ]
-        },
-        {
-            id: '15-6-3-6', name: '6-3-6 rows',
-            frames: [
-                { top: 0, left: 0, width: 16.67, height: 33.33 },
-                { top: 0, left: 16.67, width: 16.66, height: 33.33 },
-                { top: 0, left: 33.33, width: 16.67, height: 33.33 },
-                { top: 0, left: 50, width: 16.67, height: 33.33 },
-                { top: 0, left: 66.67, width: 16.66, height: 33.33 },
-                { top: 0, left: 83.33, width: 16.67, height: 33.33 },
-                { top: 33.33, left: 0, width: 33.33, height: 33.34 },
-                { top: 33.33, left: 33.33, width: 33.34, height: 33.34 },
-                { top: 33.33, left: 66.67, width: 33.33, height: 33.34 },
-                { top: 66.67, left: 0, width: 16.67, height: 33.33 },
-                { top: 66.67, left: 16.67, width: 16.66, height: 33.33 },
-                { top: 66.67, left: 33.33, width: 16.67, height: 33.33 },
-                { top: 66.67, left: 50, width: 16.67, height: 33.33 },
-                { top: 66.67, left: 66.67, width: 16.66, height: 33.33 },
-                { top: 66.67, left: 83.33, width: 16.67, height: 33.33 },
-            ]
-        },
-        {
-            id: '15-1large-14small', name: '1 large + 14 small',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 100 },
-                { top: 0, left: 50, width: 25, height: 14.29 },
-                { top: 0, left: 75, width: 25, height: 14.29 },
-                { top: 14.29, left: 50, width: 25, height: 14.28 },
-                { top: 14.29, left: 75, width: 25, height: 14.28 },
-                { top: 28.57, left: 50, width: 25, height: 14.29 },
-                { top: 28.57, left: 75, width: 25, height: 14.29 },
-                { top: 42.86, left: 50, width: 25, height: 14.28 },
-                { top: 42.86, left: 75, width: 25, height: 14.28 },
-                { top: 57.14, left: 50, width: 25, height: 14.29 },
-                { top: 57.14, left: 75, width: 25, height: 14.29 },
-                { top: 71.43, left: 50, width: 25, height: 14.28 },
-                { top: 71.43, left: 75, width: 25, height: 14.28 },
-                { top: 85.71, left: 50, width: 25, height: 14.29 },
-                { top: 85.71, left: 75, width: 25, height: 14.29 },
-            ]
-        },
+        layout('15-5x3', '5×3 grid', grid(5, 3)),
+        layout('15-3x5', '3×5 grid', grid(3, 5)),
+        layout('15-6-3-6', '6-3-6 rows', rows([6, 3, 6])),
+        layout('15-1large-14small', '1 large + 14 small', [cell(LEFT_HALF), ...grid(2, 7, RIGHT_HALF)]),
     ],
     16: [
-        {
-            id: '16-4x4', name: '4×4 grid',
-            frames: [
-                { top: 0, left: 0, width: 25, height: 25 },
-                { top: 0, left: 25, width: 25, height: 25 },
-                { top: 0, left: 50, width: 25, height: 25 },
-                { top: 0, left: 75, width: 25, height: 25 },
-                { top: 25, left: 0, width: 25, height: 25 },
-                { top: 25, left: 25, width: 25, height: 25 },
-                { top: 25, left: 50, width: 25, height: 25 },
-                { top: 25, left: 75, width: 25, height: 25 },
-                { top: 50, left: 0, width: 25, height: 25 },
-                { top: 50, left: 25, width: 25, height: 25 },
-                { top: 50, left: 50, width: 25, height: 25 },
-                { top: 50, left: 75, width: 25, height: 25 },
-                { top: 75, left: 0, width: 25, height: 25 },
-                { top: 75, left: 25, width: 25, height: 25 },
-                { top: 75, left: 50, width: 25, height: 25 },
-                { top: 75, left: 75, width: 25, height: 25 },
-            ]
-        },
-        {
-            id: '16-8x2', name: '8×2 grid',
-            frames: [
-                { top: 0, left: 0, width: 12.5, height: 50 },
-                { top: 0, left: 12.5, width: 12.5, height: 50 },
-                { top: 0, left: 25, width: 12.5, height: 50 },
-                { top: 0, left: 37.5, width: 12.5, height: 50 },
-                { top: 0, left: 50, width: 12.5, height: 50 },
-                { top: 0, left: 62.5, width: 12.5, height: 50 },
-                { top: 0, left: 75, width: 12.5, height: 50 },
-                { top: 0, left: 87.5, width: 12.5, height: 50 },
-                { top: 50, left: 0, width: 12.5, height: 50 },
-                { top: 50, left: 12.5, width: 12.5, height: 50 },
-                { top: 50, left: 25, width: 12.5, height: 50 },
-                { top: 50, left: 37.5, width: 12.5, height: 50 },
-                { top: 50, left: 50, width: 12.5, height: 50 },
-                { top: 50, left: 62.5, width: 12.5, height: 50 },
-                { top: 50, left: 75, width: 12.5, height: 50 },
-                { top: 50, left: 87.5, width: 12.5, height: 50 },
-            ]
-        },
-        {
-            id: '16-2x8', name: '2×8 grid',
-            frames: [
-                { top: 0, left: 0, width: 50, height: 12.5 },
-                { top: 0, left: 50, width: 50, height: 12.5 },
-                { top: 12.5, left: 0, width: 50, height: 12.5 },
-                { top: 12.5, left: 50, width: 50, height: 12.5 },
-                { top: 25, left: 0, width: 50, height: 12.5 },
-                { top: 25, left: 50, width: 50, height: 12.5 },
-                { top: 37.5, left: 0, width: 50, height: 12.5 },
-                { top: 37.5, left: 50, width: 50, height: 12.5 },
-                { top: 50, left: 0, width: 50, height: 12.5 },
-                { top: 50, left: 50, width: 50, height: 12.5 },
-                { top: 62.5, left: 0, width: 50, height: 12.5 },
-                { top: 62.5, left: 50, width: 50, height: 12.5 },
-                { top: 75, left: 0, width: 50, height: 12.5 },
-                { top: 75, left: 50, width: 50, height: 12.5 },
-                { top: 87.5, left: 0, width: 50, height: 12.5 },
-                { top: 87.5, left: 50, width: 50, height: 12.5 },
-            ]
-        },
-        {
-            id: '16-5-6-5', name: '5-6-5 rows',
-            frames: [
-                { top: 0, left: 0, width: 20, height: 33.33 },
-                { top: 0, left: 20, width: 20, height: 33.33 },
-                { top: 0, left: 40, width: 20, height: 33.33 },
-                { top: 0, left: 60, width: 20, height: 33.33 },
-                { top: 0, left: 80, width: 20, height: 33.33 },
-                { top: 33.33, left: 0, width: 16.67, height: 33.34 },
-                { top: 33.33, left: 16.67, width: 16.66, height: 33.34 },
-                { top: 33.33, left: 33.33, width: 16.67, height: 33.34 },
-                { top: 33.33, left: 50, width: 16.67, height: 33.34 },
-                { top: 33.33, left: 66.67, width: 16.66, height: 33.34 },
-                { top: 33.33, left: 83.33, width: 16.67, height: 33.34 },
-                { top: 66.67, left: 0, width: 20, height: 33.33 },
-                { top: 66.67, left: 20, width: 20, height: 33.33 },
-                { top: 66.67, left: 40, width: 20, height: 33.33 },
-                { top: 66.67, left: 60, width: 20, height: 33.33 },
-                { top: 66.67, left: 80, width: 20, height: 33.33 },
-            ]
-        },
+        layout('16-4x4', '4×4 grid', grid(4, 4)),
+        layout('16-8x2', '8×2 grid', grid(8, 2)),
+        layout('16-2x8', '2×8 grid', grid(2, 8)),
+        layout('16-5-6-5', '5-6-5 rows', rows([5, 6, 5])),
     ],
 };
