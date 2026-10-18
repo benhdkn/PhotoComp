@@ -202,10 +202,8 @@ export function clearFrame(i) {
     state.loadedImages[i] = null;
     state.frameAdjustments[i] = defaultAdjustment();
     const image = document.querySelector(`#frame-${i} .frame-image`);
-    if (image) {
-        image.style.backgroundImage = '';
-        image.style.transform = '';
-    }
+    if (image) image.style.backgroundImage = '';
+    applyFrameAdjustment(i); // also clears any brightness/contrast filter
     deselectAll();
 }
 
