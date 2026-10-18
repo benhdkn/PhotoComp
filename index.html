@@ -88,25 +88,27 @@
         .pattern-thumb.active span { color: #f2f2f7; }
 
         /* Composition */
+        /* The outer border is white padding; clipping here keeps shadows inside the comp */
         #composition-wrapper {
             display: inline-block;
-            border: 5px solid white;
+            padding: 5px;
+            background: white;
+            overflow: hidden;
         }
 
         #composition {
             position: relative;
             width: 600px;
             height: 600px;
-            background: #2c2c2e;
+            background: white;
         }
 
         .frame {
             position: absolute;
             border-style: solid;
-            border-color: white;
+            border-color: transparent;
             border-width: 0;
             cursor: pointer;
-            background: white;
         }
 
         /* Rounded photo area inside the frame's border; the white frame background shows in the corners */
@@ -134,7 +136,7 @@
             border-radius: var(--corner-radius, 0);
             background: rgba(48, 209, 88, 0.08);
             pointer-events: none;
-            z-index: 1;
+            z-index: 2;
         }
 
         /* Drag and drop to swap photos */
@@ -205,11 +207,20 @@
         .inner-off-bottom :is(.caster-bottom, .fillet-br, .fillet-bl),
         .inner-off-left   :is(.caster-left, .fillet-bl, .fillet-tl) { display: none; }
 
-        /* Outer shadow: the photo area casts a shadow onto the surrounding lines,
-           clipped (in JS) to this cell's own share of them on the enabled sides */
-        .frame-inner {
+        /* Outer shadow: drawn below every photo (z-index), so it spreads across the lines
+           and blends with the neighbours' shadows without darkening other photos.
+           Clipped to the enabled sides, mitred at the corners. */
+        .outer-shadow {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            border-radius: var(--corner-radius, 0);
             box-shadow: var(--outer-shadow, none);
+            clip-path: var(--outer-shadow-clip, none);
+            pointer-events: none;
         }
+
+        .frame-inner { z-index: 1; }
 
         /* Shadow side toggles */
         .side-toggles {
@@ -1367,7 +1378,7 @@
         let shadowSize = 0;
         let innerShadowSize = 0;
         const SHADOW_SIDES = ['top', 'right', 'bottom', 'left'];
-        const INNER_SHADOW_PAD = 60; // px, depth of the .caster strips in the CSS
+        const SHADOW_PAD = 60; // px, how far shadows can reach; also the depth of the .caster strips in the CSS
         const INNER_SHADOW_HTML = `<div class="inner-shadow">${
             ['caster-top', 'caster-right', 'caster-bottom', 'caster-left', 'fillet-tl', 'fillet-tr', 'fillet-br', 'fillet-bl']
                 .map(c => `<div class="caster ${c.startsWith('fillet') ? 'fillet ' : ''}${c}"></div>`).join('')
@@ -1612,6 +1623,10 @@
                 frame.className = 'frame';
                 frame.id = `frame-${i}`;
                 positionFrame(frame, f);
+
+                const shadow = document.createElement('div');
+                shadow.className = 'outer-shadow';
+                frame.appendChild(shadow);
 
                 const inner = document.createElement('div');
                 inner.className = 'frame-inner';
@@ -1866,27 +1881,15 @@
                 frame.style.borderBottomWidth = outer.bottom ? '0' : `${innerW}px`;
                 frame.style.borderRightWidth  = outer.right  ? '0' : `${innerW}px`;
             });
-            wrapper.style.borderWidth = `${outerW}px`;
+            wrapper.style.padding = `${outerW}px`;
             updateShadowShapes();
-        }
-
-        // How far a cell's outer shadow may reach on each side: its own border,
-        // or the outer border on outer sides
-        function getLineShares(f, innerW, outerW) {
-            const outer = getOuterSides(f);
-            return {
-                top:    outer.top    ? outerW : innerW,
-                right:  outer.right  ? outerW : innerW,
-                bottom: outer.bottom ? outerW : innerW,
-                left:   outer.left   ? outerW : innerW,
-            };
         }
 
         // Corners of the photo area clockwise from top left, with the sides meeting there
         const SHADOW_CORNERS = [['left', 'top'], ['top', 'right'], ['right', 'bottom'], ['bottom', 'left']];
 
-        // Outline of the outer shadow area: the photo area grown into the lines on enabled sides,
-        // mitred from each photo corner to the cell corner. Returns [cornerIndex, 'inner' | 'outer'] points.
+        // Outline of the outer shadow area: the photo area grown by SHADOW_PAD on enabled sides,
+        // mitred at 45° from each photo corner. Returns [cornerIndex, 'inner' | 'outer'] points.
         function getOuterShadowOutline(sides) {
             return SHADOW_CORNERS.flatMap(([a, b], i) => {
                 if (sides[a] && sides[b]) return [[i, 'outer']];
@@ -1898,23 +1901,14 @@
 
         // Limits each shadow to its enabled sides, in the preview
         function updateShadowShapes() {
-            if (!currentPattern) return;
-
             const wrapper = document.getElementById('composition-wrapper');
             SHADOW_SIDES.forEach(side => wrapper.classList.toggle(`inner-off-${side}`, !innerShadowSides[side]));
 
-            currentPattern.frames.forEach((f, i) => {
-                const inner = document.querySelector(`#frame-${i} .frame-inner`);
-                if (!inner) return;
-
-                const l = getLineShares(f, borderWidth, outerBorderWidth);
-                const xs = { inner: ['0%', '100%', '100%', '0%'],
-                             outer: [`${-l.left}px`, `calc(100% + ${l.right}px)`, `calc(100% + ${l.right}px)`, `${-l.left}px`] };
-                const ys = { inner: ['0%', '0%', '100%', '100%'],
-                             outer: [`${-l.top}px`, `${-l.top}px`, `calc(100% + ${l.bottom}px)`, `calc(100% + ${l.bottom}px)`] };
-                const points = getOuterShadowOutline(outerShadowSides).map(([c, k]) => `${xs[k][c]} ${ys[k][c]}`);
-                inner.style.clipPath = `polygon(${points.join(', ')})`;
-            });
+            const p = SHADOW_PAD;
+            const xs = { inner: ['0%', '100%', '100%', '0%'], outer: [`${-p}px`, `calc(100% + ${p}px)`, `calc(100% + ${p}px)`, `${-p}px`] };
+            const ys = { inner: ['0%', '0%', '100%', '100%'], outer: [`${-p}px`, `${-p}px`, `calc(100% + ${p}px)`, `calc(100% + ${p}px)`] };
+            const points = getOuterShadowOutline(outerShadowSides).map(([c, k]) => `${xs[k][c]} ${ys[k][c]}`);
+            wrapper.style.setProperty('--outer-shadow-clip', `polygon(${points.join(', ')})`);
         }
 
         function updateCornerRadius() {
@@ -1962,7 +1956,7 @@
             const shadows = getInnerShadows();
             if (!shadows.length) return;
 
-            const p = INNER_SHADOW_PAD * scale;
+            const p = SHADOW_PAD * scale;
             const r = Math.min(radius, w / 2, h / 2);
             const on = innerShadowSides;
             const shape = pts => {
@@ -1996,12 +1990,13 @@
 
         // Draws the photo area's shadow onto its share of the lines (cell box minus photo area),
         // matching CSS: an outer box-shadow never shows under its own element
-        function drawOuterShadow(ctx, lines, x, y, w, h, radius, scale) {
+        function drawOuterShadow(ctx, x, y, w, h, radius, scale) {
             const shadows = getOuterShadows();
             if (!shadows.length) return;
 
-            const xs = { inner: [x, x + w, x + w, x], outer: [x - lines.left, x + w + lines.right, x + w + lines.right, x - lines.left] };
-            const ys = { inner: [y, y, y + h, y + h], outer: [y - lines.top, y - lines.top, y + h + lines.bottom, y + h + lines.bottom] };
+            const p = SHADOW_PAD * scale;
+            const xs = { inner: [x, x + w, x + w, x], outer: [x - p, x + w + p, x + w + p, x - p] };
+            const ys = { inner: [y, y, y + h, y + h], outer: [y - p, y - p, y + h + p, y + h + p] };
 
             ctx.save();
             ctx.beginPath();
@@ -2152,7 +2147,8 @@
                     ctx.fillStyle = 'white';
                     ctx.fillRect(0, 0, exportTotal, exportTotal);
 
-                    currentPattern.frames.forEach((f, i) => {
+                    // Photo area of each cell, inside its share of the lines
+                    const areas = currentPattern.frames.map(f => {
                         const outer = getOuterSides(f);
 
                         const fx = scaledOuterBorder + f.left / 100 * exportResolution;
@@ -2165,17 +2161,23 @@
                         const bR = outer.right  ? 0 : scaledBorder;
                         const bB = outer.bottom ? 0 : scaledBorder;
 
-                        const innerX = fx + bL;
-                        const innerY = fy + bT;
-                        const innerW = fw - bL - bR;
-                        const innerH = fh - bT - bB;
+                        return { x: fx + bL, y: fy + bT, w: fw - bL - bR, h: fh - bT - bB };
+                    });
 
+                    // Outer shadows first, under every photo, like the preview
+                    areas.forEach(a => drawOuterShadow(ctx, a.x, a.y, a.w, a.h, scaledCorner, scale));
+
+                    areas.forEach(({ x: innerX, y: innerY, w: innerW, h: innerH }, i) => {
                         const img = images[i];
 
                         ctx.save();
                         ctx.beginPath();
                         ctx.roundRect(innerX, innerY, innerW, innerH, scaledCorner);
                         ctx.clip();
+
+                        // Opaque photo area, so neighbouring shadows never show through letterboxing
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(innerX, innerY, innerW, innerH);
 
                         if (img) {
                             const adj = frameAdjustments[i] || { zoom: 1, x: 0, y: 0 };
@@ -2199,9 +2201,6 @@
 
                         drawInnerShadow(ctx, innerX, innerY, innerW, innerH, scaledCorner, scale);
                         ctx.restore();
-
-                        const lines = getLineShares(f, scaledBorder, scaledOuterBorder);
-                        drawOuterShadow(ctx, lines, innerX, innerY, innerW, innerH, scaledCorner, scale);
                     });
 
                     const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
