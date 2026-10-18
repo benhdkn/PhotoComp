@@ -98,7 +98,6 @@
             width: 600px;
             height: 600px;
             background: #2c2c2e;
-            overflow: hidden;
         }
 
         .frame {
@@ -107,7 +106,6 @@
             border-color: white;
             border-width: 0;
             cursor: pointer;
-            overflow: hidden;
             background: white;
         }
 
@@ -170,6 +168,18 @@
 
         .edge-handle:hover::before,
         .edge-handle.active::before { opacity: 1; }
+
+        /* Outer shadow: the photo area casts a shadow onto the surrounding lines,
+           clipped to this cell's own share of them (--line-* set per frame) */
+        .frame-inner {
+            box-shadow: var(--outer-shadow, none);
+            clip-path: inset(
+                calc(-1 * var(--line-top, 0px))
+                calc(-1 * var(--line-right, 0px))
+                calc(-1 * var(--line-bottom, 0px))
+                calc(-1 * var(--line-left, 0px))
+            );
+        }
 
         .frame-image {
             position: absolute;
@@ -471,6 +481,11 @@
                     <span>Corners</span>
                     <input type="range" id="corner-slider" min="0" max="50" value="0" step="1">
                     <input type="number" id="corner-value" min="0" max="50" value="0" step="1">
+                </div>
+                <div class="setting-row">
+                    <span>Outer shadow</span>
+                    <input type="range" id="shadow-slider" min="0" max="20" value="0" step="1">
+                    <input type="number" id="shadow-value" min="0" max="20" value="0" step="1">
                 </div>
             </div>
 
@@ -1278,6 +1293,7 @@
         let borderWidth = 5;
         let outerBorderWidth = 5;
         let cornerRadius = 0;
+        let shadowSize = 0;
         let exportResolution = 4000;
 
         function init() {
@@ -1397,6 +1413,18 @@
                 cornerRadius = Math.min(50, Math.max(0, Number(this.value) || 0));
                 document.getElementById('corner-slider').value = cornerRadius;
                 updateCornerRadius();
+            });
+
+            document.getElementById('shadow-slider').addEventListener('input', function () {
+                shadowSize = Number(this.value);
+                document.getElementById('shadow-value').value = shadowSize;
+                updateOuterShadow();
+            });
+
+            document.getElementById('shadow-value').addEventListener('input', function () {
+                shadowSize = Math.min(20, Math.max(0, Number(this.value) || 0));
+                document.getElementById('shadow-slider').value = shadowSize;
+                updateOuterShadow();
             });
         }
 
@@ -1724,12 +1752,61 @@
                 frame.style.borderLeftWidth   = outer.left   ? '0' : `${innerW}px`;
                 frame.style.borderBottomWidth = outer.bottom ? '0' : `${innerW}px`;
                 frame.style.borderRightWidth  = outer.right  ? '0' : `${innerW}px`;
+                // How far this cell's outer shadow may reach: its own border, or the outer border on outer sides
+                frame.style.setProperty('--line-top',    `${outer.top    ? outerW : innerW}px`);
+                frame.style.setProperty('--line-left',   `${outer.left   ? outerW : innerW}px`);
+                frame.style.setProperty('--line-bottom', `${outer.bottom ? outerW : innerW}px`);
+                frame.style.setProperty('--line-right',  `${outer.right  ? outerW : innerW}px`);
             });
             wrapper.style.borderWidth = `${outerW}px`;
         }
 
         function updateCornerRadius() {
             document.getElementById('composition-wrapper').style.setProperty('--corner-radius', `${cornerRadius}px`);
+        }
+
+        // Each photo casts an even shadow onto the lines around it, on all four sides.
+        // Shared by the preview (CSS box-shadow) and the export (canvas), in preview px.
+        function getOuterShadows() {
+            if (!shadowSize) return [];
+            return [
+                { x: 0, y: 0, blur: shadowSize, color: 'rgba(0, 0, 0, 0.5)' },
+            ];
+        }
+
+        function updateOuterShadow() {
+            const shadows = getOuterShadows();
+            const css = shadows.length
+                ? shadows.map(s => `${s.x}px ${s.y}px ${s.blur}px ${s.color}`).join(', ')
+                : 'none';
+            document.getElementById('composition-wrapper').style.setProperty('--outer-shadow', css);
+        }
+
+        // Draws the photo area's shadow onto its share of the lines (cell box minus photo area),
+        // matching CSS: an outer box-shadow never shows under its own element
+        function drawOuterShadow(ctx, cell, x, y, w, h, radius, scale) {
+            const shadows = getOuterShadows();
+            if (!shadows.length) return;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(cell.x, cell.y, cell.w, cell.h);
+            ctx.roundRect(x, y, w, h, radius);
+            ctx.clip('evenodd');
+
+            // Fill the shape far off to the side and shift its shadow back, so only the shadow lands
+            const away = cell.w + cell.h + 1000;
+            shadows.forEach(s => {
+                ctx.shadowColor = s.color;
+                ctx.shadowOffsetX = s.x * scale + away;
+                ctx.shadowOffsetY = s.y * scale;
+                ctx.shadowBlur = s.blur * scale;
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.roundRect(x - away, y, w, h, radius);
+                ctx.fill();
+            });
+            ctx.restore();
         }
 
         function selectFrame(i) {
@@ -1878,30 +1955,42 @@
                         const innerH = fh - bT - bB;
 
                         const img = images[i];
-                        if (!img) return;
-
-                        const adj = frameAdjustments[i] || { zoom: 1, x: 0, y: 0 };
-
-                        // Replicate background-size: contain
-                        const containScale = Math.min(innerW / img.naturalWidth, innerH / img.naturalHeight);
-                        const renderedW = img.naturalWidth * containScale;
-                        const renderedH = img.naturalHeight * containScale;
-                        const cx = (innerW - renderedW) / 2;
-                        const cy = (innerH - renderedH) / 2;
-
-                        // Replicate transform: scale(zoom) translate(x%, y%)
-                        const zoom = adj.zoom;
-                        const finalW = renderedW * zoom;
-                        const finalH = renderedH * zoom;
-                        const finalX = innerW / 2 + (cx - innerW / 2) * zoom + innerW * adj.x / 100;
-                        const finalY = innerH / 2 + (cy - innerH / 2) * zoom + innerH * adj.y / 100;
 
                         ctx.save();
                         ctx.beginPath();
                         ctx.roundRect(innerX, innerY, innerW, innerH, scaledCorner);
                         ctx.clip();
-                        ctx.drawImage(img, innerX + finalX, innerY + finalY, finalW, finalH);
+
+                        if (img) {
+                            const adj = frameAdjustments[i] || { zoom: 1, x: 0, y: 0 };
+
+                            // Replicate background-size: contain
+                            const containScale = Math.min(innerW / img.naturalWidth, innerH / img.naturalHeight);
+                            const renderedW = img.naturalWidth * containScale;
+                            const renderedH = img.naturalHeight * containScale;
+                            const cx = (innerW - renderedW) / 2;
+                            const cy = (innerH - renderedH) / 2;
+
+                            // Replicate transform: scale(zoom) translate(x%, y%)
+                            const zoom = adj.zoom;
+                            const finalW = renderedW * zoom;
+                            const finalH = renderedH * zoom;
+                            const finalX = innerW / 2 + (cx - innerW / 2) * zoom + innerW * adj.x / 100;
+                            const finalY = innerH / 2 + (cy - innerH / 2) * zoom + innerH * adj.y / 100;
+
+                            ctx.drawImage(img, innerX + finalX, innerY + finalY, finalW, finalH);
+                        }
+
                         ctx.restore();
+
+                        // This cell's share of the lines, including the outer border on outer sides
+                        const cell = {
+                            x: outer.left ? fx - scaledOuterBorder : fx,
+                            y: outer.top  ? fy - scaledOuterBorder : fy,
+                        };
+                        cell.w = (outer.right  ? fx + fw + scaledOuterBorder : fx + fw) - cell.x;
+                        cell.h = (outer.bottom ? fy + fh + scaledOuterBorder : fy + fh) - cell.y;
+                        drawOuterShadow(ctx, cell, innerX, innerY, innerW, innerH, scaledCorner, scale);
                     });
 
                     const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
