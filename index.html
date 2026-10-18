@@ -86,6 +86,11 @@
 
             <div id="frame-settings">
                 <h2 class="label">Selected photo</h2>
+                <h3 class="panel-group">Photo</h3>
+                <div class="setting-actions">
+                    <button class="setting-btn" id="replace-btn">Replace photo</button>
+                    <button class="setting-btn danger" id="clear-btn">Clear</button>
+                </div>
                 <h3 class="panel-group">Framing</h3>
                 <div class="setting-actions">
                     <button class="setting-btn" id="fit-btn">Auto fit</button>
@@ -125,11 +130,6 @@
                     <label for="saturation-slider">Saturation</label>
                     <input type="range" id="saturation-slider" min="0" max="200" value="100" step="1">
                     <input type="number" id="saturation-value" aria-label="Saturation" min="0" max="200" value="100" step="1">
-                </div>
-                <h3 class="panel-group">Photo</h3>
-                <div class="setting-actions">
-                    <button class="setting-btn" id="replace-btn">Replace photo</button>
-                    <button class="setting-btn danger" id="clear-btn">Clear</button>
                 </div>
             </div>
         </main>
