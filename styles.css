@@ -1,0 +1,504 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 20px;
+    font-family: system-ui, sans-serif;
+    background: #1c1c1e;
+    color: #f2f2f7;
+}
+
+h1 {
+    margin: 0 0 24px;
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #f2f2f7;
+    font-weight: 600;
+}
+
+.label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #8e8e93;
+    margin-bottom: 10px;
+}
+
+/* Count picker */
+.count-picker {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.count-btn {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #3a3a3c;
+    background: #2c2c2e;
+    color: #f2f2f7;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.count-btn:hover { background: #3a3a3c; }
+
+.count-btn.active {
+    background: #f2f2f7;
+    color: #1c1c1e;
+    border-color: #f2f2f7;
+    font-weight: 600;
+}
+
+/* Pattern picker */
+#pattern-section { margin-bottom: 24px; display: none; }
+
+.pattern-list { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.pattern-thumb {
+    cursor: pointer;
+    border: 2px solid #3a3a3c;
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.pattern-thumb:hover { border-color: #8e8e93; }
+.pattern-thumb.active { border-color: #f2f2f7; }
+
+.pattern-thumb span {
+    font-size: 10px;
+    color: #8e8e93;
+}
+
+.pattern-thumb.active span { color: #f2f2f7; }
+
+/* Composition */
+/* The outer border is white padding; clipping here keeps shadows inside the comp */
+#composition-wrapper {
+    display: inline-block;
+    padding: 5px;
+    background: white;
+    overflow: hidden;
+}
+
+#composition {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    background: white;
+}
+
+.frame {
+    position: absolute;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 0;
+    cursor: pointer;
+}
+
+/* Rounded photo area inside the frame's border; the white frame background shows in the corners */
+.frame-inner {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: var(--corner-radius, 0);
+    background-color: #d0d0d0;
+    background-image:
+        linear-gradient(45deg, #a8a8a8 25%, transparent 25%),
+        linear-gradient(-45deg, #a8a8a8 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #a8a8a8 75%),
+        linear-gradient(-45deg, transparent 75%, #a8a8a8 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+.frame.selected::after,
+.frame.drop-target::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 4px solid #30d158;
+    border-radius: var(--corner-radius, 0);
+    background: rgba(48, 209, 88, 0.08);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Drag and drop to swap photos */
+.frame.drop-target::after {
+    border-style: dashed;
+    background: rgba(48, 209, 88, 0.2);
+}
+
+.frame.dragging { opacity: 0.4; }
+
+/* Draggable lines between cells */
+.edge-handle {
+    position: absolute;
+    z-index: 2;
+    touch-action: none;
+}
+
+.edge-handle.vertical { width: 14px; margin-left: -7px; cursor: col-resize; }
+.edge-handle.horizontal { height: 14px; margin-top: -7px; cursor: row-resize; }
+
+.edge-handle::before {
+    content: '';
+    position: absolute;
+    background: #30d158;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+
+.edge-handle.vertical::before { top: 0; bottom: 0; left: 6px; width: 2px; }
+.edge-handle.horizontal::before { left: 0; right: 0; top: 6px; height: 2px; }
+
+.edge-handle:hover::before,
+.edge-handle.active::before { opacity: 1; }
+
+/* Inner shadow, drawn above the photo: black shapes just outside the photo area
+   (hidden by its clipping) cast a drop shadow inward. One mitred strip per side,
+   plus the bits between a rounded corner and the square corner when both sides are on. */
+.inner-shadow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    filter: var(--inner-shadow, none);
+}
+
+.caster { position: absolute; background: black; }
+
+.caster-top    { left: -60px; right: -60px; top: -60px; height: 60px;
+                 clip-path: polygon(0 0, 100% 0, calc(100% - 60px) 100%, 60px 100%); }
+.caster-bottom { left: -60px; right: -60px; bottom: -60px; height: 60px;
+                 clip-path: polygon(60px 0, calc(100% - 60px) 0, 100% 100%, 0 100%); }
+.caster-left   { top: -60px; bottom: -60px; left: -60px; width: 60px;
+                 clip-path: polygon(0 0, 100% 60px, 100% calc(100% - 60px), 0 100%); }
+.caster-right  { top: -60px; bottom: -60px; right: -60px; width: 60px;
+                 clip-path: polygon(0 60px, 100% 0, 100% 100%, 0 calc(100% - 60px)); }
+
+.fillet { width: var(--corner-radius, 0); height: var(--corner-radius, 0); background: none; }
+.fillet-tl { left: 0; top: 0;
+             background: radial-gradient(circle var(--corner-radius, 0) at 100% 100%, transparent 99%, black 100%); }
+.fillet-tr { right: 0; top: 0;
+             background: radial-gradient(circle var(--corner-radius, 0) at 0 100%, transparent 99%, black 100%); }
+.fillet-br { right: 0; bottom: 0;
+             background: radial-gradient(circle var(--corner-radius, 0) at 0 0, transparent 99%, black 100%); }
+.fillet-bl { left: 0; bottom: 0;
+             background: radial-gradient(circle var(--corner-radius, 0) at 100% 0, transparent 99%, black 100%); }
+
+.inner-off-top    :is(.caster-top, .fillet-tl, .fillet-tr),
+.inner-off-right  :is(.caster-right, .fillet-tr, .fillet-br),
+.inner-off-bottom :is(.caster-bottom, .fillet-br, .fillet-bl),
+.inner-off-left   :is(.caster-left, .fillet-bl, .fillet-tl) { display: none; }
+
+/* Outer shadow: drawn below every photo (z-index), so it spreads across the lines
+   and blends with the neighbours' shadows without darkening other photos.
+   Clipped to the enabled sides, mitred at the corners. */
+.outer-shadow {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: var(--corner-radius, 0);
+    box-shadow: var(--outer-shadow, none);
+    clip-path: var(--outer-shadow-clip, none);
+    pointer-events: none;
+}
+
+.frame-inner { z-index: 1; }
+
+/* Shadow side toggles */
+.side-toggles {
+    display: flex;
+    gap: 4px;
+    margin: 4px 0 6px 90px;
+}
+
+.side-btn {
+    padding: 2px 8px;
+    border: 1px solid #3a3a3c;
+    background: #2c2c2e;
+    color: #8e8e93;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: inherit;
+}
+
+.side-btn:hover { background: #3a3a3c; }
+
+.side-btn.active {
+    background: #f2f2f7;
+    color: #1c1c1e;
+    border-color: #f2f2f7;
+}
+
+.frame-image {
+    position: absolute;
+    inset: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transform-origin: center center;
+}
+
+/* Frame settings panel */
+#frame-settings {
+    display: none;
+    background: #2c2c2e;
+    border-radius: 8px;
+    padding: 14px 16px;
+    gap: 12px;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+#frame-settings.visible { display: flex; }
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-row span:first-child {
+    font-size: 12px;
+    color: #8e8e93;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.setting-row input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    accent-color: #0a84ff;
+}
+
+.setting-row .value {
+    font-size: 12px;
+    color: #f2f2f7;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.setting-row input[type="number"] {
+    width: 52px;
+    background: #3a3a3c;
+    border: 1px solid #48484a;
+    border-radius: 4px;
+    color: #f2f2f7;
+    font-size: 12px;
+    font-family: inherit;
+    padding: 2px 6px;
+    text-align: right;
+    flex-shrink: 0;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.setting-row input[type="number"]::-webkit-inner-spin-button,
+.setting-row input[type="number"]::-webkit-outer-spin-button {
+    opacity: 0;
+}
+
+.setting-row input[type="number"]:focus {
+    outline: none;
+    border-color: #0a84ff;
+}
+
+.setting-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.setting-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid #3a3a3c;
+    background: #3a3a3c;
+    color: #f2f2f7;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+}
+
+.setting-btn:hover { background: #48484a; }
+
+.setting-btn.danger { border-color: #ff453a; color: #ff453a; background: none; }
+.setting-btn.danger:hover { background: rgba(255, 69, 58, 0.1); }
+.setting-btn.success { border-color: #30d158; color: #30d158; background: none; }
+.setting-btn.success:hover { background: rgba(48, 209, 88, 0.1); }
+
+/* Actions */
+.actions { display: flex; gap: 12px; align-items: center; }
+
+#file { display: none; }
+
+.file-label {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #2c2c2e;
+    border: 1px solid #3a3a3c;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    color: #f2f2f7;
+}
+
+.file-label:hover { background: #3a3a3c; }
+
+/* Sections hidden until pattern is selected */
+#grid-controls,
+#export-section,
+#composition-label,
+#composition-wrapper,
+#pattern-section { display: none; }
+
+#photo-section { margin-bottom: 24px; }
+#grid-controls { margin-bottom: 24px; }
+
+#pattern-section.visible,
+#grid-controls.visible,
+#export-section.visible,
+#composition-label.visible { display: block; }
+
+#composition-wrapper.visible { display: inline-block; }
+
+/* Controls on the left, composition on the right */
+#layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+}
+
+#sidebar {
+    width: 340px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+
+/* Comp sits right after the sidebar, its label level with the first sidebar label;
+   photo settings open to its right without moving it */
+#canvas-area {
+    flex: 1;
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    align-content: start;
+    column-gap: 24px;
+}
+
+#composition-label { grid-column: 1; grid-row: 1; }
+#composition-wrapper { grid-column: 1; grid-row: 2; }
+
+#frame-settings {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    width: 280px;
+}
+
+/* Export section */
+#export-section { display: none; margin-bottom: 24px; }
+
+#export-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.res-picker { display: flex; gap: 6px; }
+
+.res-btn {
+    padding: 8px 16px;
+    border: 1px solid #3a3a3c;
+    background: #2c2c2e;
+    color: #f2f2f7;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.res-btn:hover { background: #3a3a3c; }
+
+.res-btn.active {
+    background: #f2f2f7;
+    color: #1c1c1e;
+    border-color: #f2f2f7;
+    font-weight: 600;
+}
+
+#save { padding: 8px 16px; font-size: 14px; }
+
+#save:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Export overlay */
+#export-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+
+#export-overlay.visible { display: flex; }
+
+.export-card {
+    background: #2c2c2e;
+    border-radius: 12px;
+    padding: 28px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.export-card p {
+    margin: 0;
+    font-size: 14px;
+    color: #f2f2f7;
+}
+
+.progress-track {
+    width: 220px;
+    height: 4px;
+    background: #3a3a3c;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-track::after {
+    content: '';
+    display: block;
+    width: 45%;
+    height: 100%;
+    background: #0a84ff;
+    border-radius: 2px;
+    animation: progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(320%); }
+}
