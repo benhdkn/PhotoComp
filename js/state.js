@@ -13,7 +13,7 @@ export const state = {
     frameAdjustments: {},     // zoom, position, rotation, brightness, contrast per cell index
     selectedFrameIndex: null,
     dragSourceIndex: null,    // cell whose photo is being dragged
-    borderWidth: 5,
+    borderWidth: 3,
     outerBorderWidth: 5,
     cornerRadius: 0,
     shadowSize: 0,
