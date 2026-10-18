@@ -59,6 +59,7 @@ export const GRID_PATTERNS = {
         layout('3-1left-2right', '1 left + 2 right', cols([1, 2])),
         layout('3-2left-1right', '2 left + 1 right', cols([2, 1])),
         layout('3-cols', '3 columns', rows([3])),
+        layout('3-rows', '3 rows', cols([3])),
         layout('3-2top-1bottom', '2 top + 1 bottom', rows([2, 1])),
     ],
     4: [
