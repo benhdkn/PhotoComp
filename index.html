@@ -590,6 +590,9 @@
 
             <div id="frame-settings">
                 <div class="label">Selected photo</div>
+                <div class="setting-actions">
+                    <button class="setting-btn" id="fit-btn">Auto fit</button>
+                </div>
                 <div class="setting-row">
                     <span>Zoom</span>
                     <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
@@ -1460,6 +1463,10 @@
                 applyFrameAdjustment(selectedFrameIndex);
             });
 
+            document.getElementById('fit-btn').addEventListener('click', () => {
+                if (selectedFrameIndex !== null) autoFitFrame(selectedFrameIndex);
+            });
+
             document.getElementById('replace-btn').addEventListener('click', () => {
                 if (selectedFrameIndex !== null) replaceFrame(selectedFrameIndex);
             });
@@ -2047,6 +2054,27 @@
             if (!image) return;
             const { zoom, x, y } = frameAdjustments[i];
             image.style.transform = `scale(${zoom}) translate(${x}%, ${y}%)`;
+        }
+
+        // Zooms the photo just enough to cover its cell (it starts out fitted inside it)
+        function autoFitFrame(i) {
+            const src = loadedImages[i];
+            if (!src) return;
+            const cell = document.querySelector(`#frame-${i} .frame-inner`);
+            const img = new Image();
+            img.onload = () => {
+                const cellRatio = cell.clientWidth / cell.clientHeight;
+                const imgRatio = img.naturalWidth / img.naturalHeight;
+                const zoomPct = Math.min(300, Math.ceil(Math.max(cellRatio / imgRatio, imgRatio / cellRatio) * 100));
+
+                frameAdjustments[i].zoom = zoomPct / 100;
+                applyFrameAdjustment(i);
+                if (selectedFrameIndex === i) {
+                    document.getElementById('zoom-slider').value = zoomPct;
+                    document.getElementById('zoom-value').value = zoomPct;
+                }
+            };
+            img.src = src;
         }
 
         function clearFrame(i) {
