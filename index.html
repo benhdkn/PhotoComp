@@ -355,7 +355,6 @@
         .file-label:hover { background: #3a3a3c; }
 
         /* Sections hidden until pattern is selected */
-        #photo-section,
         #grid-controls,
         #export-section,
         #composition-label,
@@ -366,7 +365,6 @@
         #grid-controls { margin-bottom: 24px; }
 
         #pattern-section.visible,
-        #photo-section.visible,
         #grid-controls.visible,
         #export-section.visible,
         #composition-label.visible { display: block; }
@@ -507,18 +505,18 @@
 
     <div id="layout">
         <aside id="sidebar">
+            <div id="photo-section">
+                <div class="label">Photos</div>
+                <label class="file-label" id="file-label" for="file">Choose photos</label>
+                <input type="file" id="file" accept="image/jpeg,image/png" multiple>
+            </div>
+
             <div class="label">Number of photos</div>
             <div class="count-picker" id="count-picker"></div>
 
             <div id="pattern-section">
                 <div class="label">Layout</div>
                 <div class="pattern-list" id="pattern-list"></div>
-            </div>
-
-            <div id="photo-section">
-                <div class="label">Photos</div>
-                <label class="file-label" id="file-label" for="file">Choose photos</label>
-                <input type="file" id="file" accept="image/jpeg,image/png" multiple>
             </div>
 
             <div id="grid-controls">
@@ -1677,7 +1675,6 @@
 
             document.getElementById('composition-label').classList.add('visible');
             document.getElementById('composition-wrapper').classList.add('visible');
-            document.getElementById('photo-section').classList.add('visible');
             document.getElementById('grid-controls').classList.add('visible');
             document.getElementById('export-section').classList.add('visible');
         }
@@ -1809,6 +1806,17 @@
             });
 
             if (!files.length) return;
+
+            // No layout yet: use the chosen photo count, or else match the number of photos,
+            // and start from that count's first layout
+            if (!currentPattern) {
+                const activeCount = document.querySelector('.count-btn.active');
+                const count = activeCount
+                    ? Number(activeCount.dataset.count)
+                    : Math.min(16, Math.max(2, files.length));
+                selectCount(count);
+                selectPattern(count, GRID_PATTERNS[count][0].id);
+            }
 
             const emptySlots = getEmptySlots();
             if (!emptySlots.length) return;
