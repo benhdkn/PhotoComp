@@ -169,6 +169,16 @@
         .edge-handle:hover::before,
         .edge-handle.active::before { opacity: 1; }
 
+        /* Inner shadow drawn above the photo */
+        .frame-inner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            box-shadow: var(--inner-shadow, none);
+            pointer-events: none;
+        }
+
         /* Outer shadow: the photo area casts a shadow onto the surrounding lines,
            clipped to this cell's own share of them (--line-* set per frame) */
         .frame-inner {
@@ -486,6 +496,11 @@
                     <span>Outer shadow</span>
                     <input type="range" id="shadow-slider" min="0" max="20" value="0" step="1">
                     <input type="number" id="shadow-value" min="0" max="20" value="0" step="1">
+                </div>
+                <div class="setting-row">
+                    <span>Inner shadow</span>
+                    <input type="range" id="inner-shadow-slider" min="0" max="20" value="0" step="1">
+                    <input type="number" id="inner-shadow-value" min="0" max="20" value="0" step="1">
                 </div>
             </div>
 
@@ -1294,6 +1309,7 @@
         let outerBorderWidth = 5;
         let cornerRadius = 0;
         let shadowSize = 0;
+        let innerShadowSize = 0;
         let exportResolution = 4000;
 
         function init() {
@@ -1425,6 +1441,18 @@
                 shadowSize = Math.min(20, Math.max(0, Number(this.value) || 0));
                 document.getElementById('shadow-slider').value = shadowSize;
                 updateOuterShadow();
+            });
+
+            document.getElementById('inner-shadow-slider').addEventListener('input', function () {
+                innerShadowSize = Number(this.value);
+                document.getElementById('inner-shadow-value').value = innerShadowSize;
+                updateInnerShadow();
+            });
+
+            document.getElementById('inner-shadow-value').addEventListener('input', function () {
+                innerShadowSize = Math.min(20, Math.max(0, Number(this.value) || 0));
+                document.getElementById('inner-shadow-slider').value = innerShadowSize;
+                updateInnerShadow();
             });
         }
 
@@ -1782,6 +1810,41 @@
             document.getElementById('composition-wrapper').style.setProperty('--outer-shadow', css);
         }
 
+        // Even shadow just inside each photo's edges, on all four sides. Same units as getOuterShadows.
+        function getInnerShadows() {
+            if (!innerShadowSize) return [];
+            return [
+                { x: 0, y: 0, blur: innerShadowSize, color: 'rgba(0, 0, 0, 0.5)' },
+            ];
+        }
+
+        function updateInnerShadow() {
+            const shadows = getInnerShadows();
+            const css = shadows.length
+                ? shadows.map(s => `inset ${s.x}px ${s.y}px ${s.blur}px ${s.color}`).join(', ')
+                : 'none';
+            document.getElementById('composition-wrapper').style.setProperty('--inner-shadow', css);
+        }
+
+        // Canvas has no inset shadow: fill a ring around the (already clipped) photo area
+        // so only its shadow falls inside, matching CSS `box-shadow: inset`
+        function drawInnerShadow(ctx, x, y, w, h, radius, scale) {
+            getInnerShadows().forEach(s => {
+                const pad = (Math.abs(s.x) + Math.abs(s.y) + s.blur) * scale * 2 + 10;
+                ctx.save();
+                ctx.shadowColor = s.color;
+                ctx.shadowOffsetX = s.x * scale;
+                ctx.shadowOffsetY = s.y * scale;
+                ctx.shadowBlur = s.blur * scale;
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.rect(x - pad, y - pad, w + 2 * pad, h + 2 * pad);
+                ctx.roundRect(x, y, w, h, radius);
+                ctx.fill('evenodd');
+                ctx.restore();
+            });
+        }
+
         // Draws the photo area's shadow onto its share of the lines (cell box minus photo area),
         // matching CSS: an outer box-shadow never shows under its own element
         function drawOuterShadow(ctx, cell, x, y, w, h, radius, scale) {
@@ -1981,6 +2044,7 @@
                             ctx.drawImage(img, innerX + finalX, innerY + finalY, finalW, finalH);
                         }
 
+                        drawInnerShadow(ctx, innerX, innerY, innerW, innerH, scaledCorner, scale);
                         ctx.restore();
 
                         // This cell's share of the lines, including the outer border on outer sides
