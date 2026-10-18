@@ -1,6 +1,7 @@
 // The on-screen comp: cells, photos and their adjustments, selection.
 
 import { renderEdgeHandles } from './edges.js';
+import { showPhotoSettings, showSetting } from './settings.js';
 import { INNER_SHADOW_HTML, updateShadowShapes } from './shadows.js';
 import { defaultAdjustment, state } from './state.js';
 
@@ -139,18 +140,7 @@ export function selectFrame(i) {
     state.selectedFrameIndex = i;
     document.getElementById(`frame-${i}`).classList.add('selected');
 
-    const adj = state.frameAdjustments[i];
-    const zoomPct = Math.round(adj.zoom * 100);
-    document.getElementById('zoom-slider').value = zoomPct;
-    document.getElementById('zoom-value').value = zoomPct;
-    document.getElementById('x-slider').value = adj.x;
-    document.getElementById('x-value').value = adj.x;
-    document.getElementById('y-slider').value = adj.y;
-    document.getElementById('y-value').value = adj.y;
-    ['rotation', 'brightness', 'contrast'].forEach(key => {
-        document.getElementById(`${key}-slider`).value = adj[key];
-        document.getElementById(`${key}-value`).value = adj[key];
-    });
+    showPhotoSettings(state.frameAdjustments[i]);
 
     document.getElementById('frame-settings').classList.add('visible');
 }
@@ -190,10 +180,7 @@ export function autoFitFrame(i) {
 
         state.frameAdjustments[i].zoom = zoomPct / 100;
         applyFrameAdjustment(i);
-        if (state.selectedFrameIndex === i) {
-            document.getElementById('zoom-slider').value = zoomPct;
-            document.getElementById('zoom-value').value = zoomPct;
-        }
+        if (state.selectedFrameIndex === i) showSetting('zoom', zoomPct);
     };
     img.src = src;
 }
