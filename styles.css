@@ -58,6 +58,7 @@ h1 {
 .count-picker {
     display: flex;
     gap: 6px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
 }
 
@@ -83,7 +84,7 @@ h1 {
 }
 
 /* Pattern picker */
-#pattern-section { display: none; }
+#pattern-section { margin-bottom: 24px; display: none; }
 
 .pattern-list { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -419,13 +420,8 @@ h1 {
 #composition-wrapper,
 #pattern-section { display: none; }
 
-/* Sidebar sections, separated by a thin line like the photo panel's groups */
-#sidebar > div { margin-bottom: 20px; }
-
-#sidebar > div + div {
-    padding-top: 20px;
-    border-top: 1px solid #3a3a3c;
-}
+#photo-section { margin-bottom: 24px; }
+#grid-controls { margin-bottom: 24px; }
 
 #pattern-section.visible,
 #grid-controls.visible,
@@ -472,7 +468,7 @@ h1 {
 }
 
 /* Export section */
-#export-section { display: none; }
+#export-section { display: none; margin-bottom: 24px; }
 
 #export-row {
     display: flex;
