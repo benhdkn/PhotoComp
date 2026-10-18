@@ -608,6 +608,21 @@
                     <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
                     <input type="number" id="y-value" min="-50" max="50" value="0" step="1">
                 </div>
+                <div class="setting-row">
+                    <span>Rotation</span>
+                    <input type="range" id="rotation-slider" min="-180" max="180" value="0" step="1">
+                    <input type="number" id="rotation-value" min="-180" max="180" value="0" step="1">
+                </div>
+                <div class="setting-row">
+                    <span>Brightness</span>
+                    <input type="range" id="brightness-slider" min="0" max="200" value="100" step="1">
+                    <input type="number" id="brightness-value" min="0" max="200" value="100" step="1">
+                </div>
+                <div class="setting-row">
+                    <span>Contrast</span>
+                    <input type="range" id="contrast-slider" min="0" max="200" value="100" step="1">
+                    <input type="number" id="contrast-value" min="0" max="200" value="100" step="1">
+                </div>
                 <div class="setting-actions">
                     <button class="setting-btn" id="replace-btn">Replace photo</button>
                     <button class="setting-btn danger" id="clear-btn">Clear</button>
@@ -1463,6 +1478,27 @@
                 applyFrameAdjustment(selectedFrameIndex);
             });
 
+            // Rotation (degrees), brightness and contrast (%): slider and number box kept in sync
+            [['rotation', -180, 180], ['brightness', 0, 200], ['contrast', 0, 200]].forEach(([key, min, max]) => {
+                const slider = document.getElementById(`${key}-slider`);
+                const number = document.getElementById(`${key}-value`);
+
+                slider.addEventListener('input', function () {
+                    if (selectedFrameIndex === null) return;
+                    frameAdjustments[selectedFrameIndex][key] = Number(this.value);
+                    number.value = this.value;
+                    applyFrameAdjustment(selectedFrameIndex);
+                });
+
+                number.addEventListener('input', function () {
+                    if (selectedFrameIndex === null) return;
+                    const val = Math.min(max, Math.max(min, Number(this.value) || 0));
+                    frameAdjustments[selectedFrameIndex][key] = val;
+                    slider.value = val;
+                    applyFrameAdjustment(selectedFrameIndex);
+                });
+            });
+
             document.getElementById('fit-btn').addEventListener('click', () => {
                 if (selectedFrameIndex !== null) autoFitFrame(selectedFrameIndex);
             });
@@ -1624,7 +1660,7 @@
             deselectAll();
 
             pattern.frames.forEach((f, i) => {
-                frameAdjustments[i] = { zoom: 1, x: 0, y: 0 };
+                frameAdjustments[i] = defaultAdjustment();
 
                 const frame = document.createElement('div');
                 frame.className = 'frame';
@@ -2039,6 +2075,10 @@
             document.getElementById('x-value').value = adj.x;
             document.getElementById('y-slider').value = adj.y;
             document.getElementById('y-value').value = adj.y;
+            ['rotation', 'brightness', 'contrast'].forEach(key => {
+                document.getElementById(`${key}-slider`).value = adj[key];
+                document.getElementById(`${key}-value`).value = adj[key];
+            });
 
             document.getElementById('frame-settings').classList.add('visible');
         }
@@ -2049,23 +2089,50 @@
             document.getElementById('frame-settings').classList.remove('visible');
         }
 
+        function defaultAdjustment() {
+            return { zoom: 1, x: 0, y: 0, rotation: 0, brightness: 100, contrast: 100 };
+        }
+
         function applyFrameAdjustment(i) {
             const image = document.querySelector(`#frame-${i} .frame-image`);
             if (!image) return;
-            const { zoom, x, y } = frameAdjustments[i];
-            image.style.transform = `scale(${zoom}) translate(${x}%, ${y}%)`;
+            const { zoom, x, y, rotation, brightness, contrast } = frameAdjustments[i];
+            image.style.transform = `scale(${zoom}) translate(${x}%, ${y}%) rotate(${rotation}deg)`;
+            image.style.filter = brightness === 100 && contrast === 100
+                ? ''
+                : `brightness(${brightness}%) contrast(${contrast}%)`;
         }
 
-        // Zooms the photo just enough to cover its cell (it starts out fitted inside it)
+        // Same maths as CSS brightness() then contrast(), on the export's pixels
+        // (canvas filters aren't available in every browser)
+        function applyBrightnessContrast(ctx, w, h, brightness, contrast) {
+            const b = brightness / 100, c = contrast / 100;
+            const image = ctx.getImageData(0, 0, w, h);
+            const d = image.data;
+            for (let p = 0; p < d.length; p += 4) {
+                d[p]     = (d[p]     * b - 127.5) * c + 127.5;
+                d[p + 1] = (d[p + 1] * b - 127.5) * c + 127.5;
+                d[p + 2] = (d[p + 2] * b - 127.5) * c + 127.5;
+            }
+            ctx.putImageData(image, 0, 0);
+        }
+
+        // Zooms the photo just enough to cover its cell (it starts out fitted inside it),
+        // taking its rotation into account
         function autoFitFrame(i) {
             const src = loadedImages[i];
             if (!src) return;
             const cell = document.querySelector(`#frame-${i} .frame-inner`);
             const img = new Image();
             img.onload = () => {
-                const cellRatio = cell.clientWidth / cell.clientHeight;
-                const imgRatio = img.naturalWidth / img.naturalHeight;
-                const zoomPct = Math.min(300, Math.ceil(Math.max(cellRatio / imgRatio, imgRatio / cellRatio) * 100));
+                const W = cell.clientWidth, H = cell.clientHeight;
+                const contain = Math.min(W / img.naturalWidth, H / img.naturalHeight);
+                const w = img.naturalWidth * contain, h = img.naturalHeight * contain;
+                // The cell's bounding box, seen from the rotated photo, must fit inside the photo
+                const a = frameAdjustments[i].rotation * Math.PI / 180;
+                const cos = Math.abs(Math.cos(a)), sin = Math.abs(Math.sin(a));
+                const zoom = Math.max((W * cos + H * sin) / w, (W * sin + H * cos) / h);
+                const zoomPct = Math.min(300, Math.ceil(zoom * 100));
 
                 frameAdjustments[i].zoom = zoomPct / 100;
                 applyFrameAdjustment(i);
@@ -2079,7 +2146,7 @@
 
         function clearFrame(i) {
             loadedImages[i] = null;
-            frameAdjustments[i] = { zoom: 1, x: 0, y: 0 };
+            frameAdjustments[i] = defaultAdjustment();
             const image = document.querySelector(`#frame-${i} .frame-image`);
             if (image) {
                 image.style.backgroundImage = '';
@@ -2108,7 +2175,7 @@
                 loadImages([file])
                     .then(([src]) => {
                         loadedImages[i] = src;
-                        frameAdjustments[i] = { zoom: 1, x: 0, y: 0 };
+                        frameAdjustments[i] = defaultAdjustment();
                         renderFrames(loadedImages);
                         applyFrameAdjustment(i);
                         selectFrame(i);
@@ -2208,23 +2275,36 @@
                         ctx.fillRect(innerX, innerY, innerW, innerH);
 
                         if (img) {
-                            const adj = frameAdjustments[i] || { zoom: 1, x: 0, y: 0 };
+                            const adj = frameAdjustments[i] || defaultAdjustment();
 
                             // Replicate background-size: contain
                             const containScale = Math.min(innerW / img.naturalWidth, innerH / img.naturalHeight);
                             const renderedW = img.naturalWidth * containScale;
                             const renderedH = img.naturalHeight * containScale;
-                            const cx = (innerW - renderedW) / 2;
-                            const cy = (innerH - renderedH) / 2;
 
-                            // Replicate transform: scale(zoom) translate(x%, y%)
-                            const zoom = adj.zoom;
-                            const finalW = renderedW * zoom;
-                            const finalH = renderedH * zoom;
-                            const finalX = innerW / 2 + (cx - innerW / 2) * zoom + innerW * adj.x / 100;
-                            const finalY = innerH / 2 + (cy - innerH / 2) * zoom + innerH * adj.y / 100;
+                            // Replicate transform: scale(zoom) translate(x%, y%) rotate(r), around the cell centre
+                            const drawPhoto = (c, left, top) => {
+                                c.translate(left + innerW / 2, top + innerH / 2);
+                                c.scale(adj.zoom, adj.zoom);
+                                c.translate(innerW * adj.x / 100, innerH * adj.y / 100);
+                                c.rotate(adj.rotation * Math.PI / 180);
+                                c.drawImage(img, -renderedW / 2, -renderedH / 2, renderedW, renderedH);
+                            };
 
-                            ctx.drawImage(img, innerX + finalX, innerY + finalY, finalW, finalH);
+                            if (adj.brightness === 100 && adj.contrast === 100) {
+                                ctx.save();
+                                drawPhoto(ctx, innerX, innerY);
+                                ctx.restore();
+                            } else {
+                                // Draw the cell on its own layer so only the photo's pixels are adjusted
+                                const layer = document.createElement('canvas');
+                                layer.width = Math.ceil(innerW);
+                                layer.height = Math.ceil(innerH);
+                                const lctx = layer.getContext('2d');
+                                drawPhoto(lctx, 0, 0);
+                                applyBrightnessContrast(lctx, layer.width, layer.height, adj.brightness, adj.contrast);
+                                ctx.drawImage(layer, innerX, innerY);
+                            }
                         }
 
                         drawInnerShadow(ctx, innerX, innerY, innerW, innerH, scaledCorner, scale);
