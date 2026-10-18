@@ -300,6 +300,24 @@ h1 {
 
 #frame-settings.visible { display: flex; }
 
+/* Themed groups inside the photo panel, separated by a thin line */
+.panel-group {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #636366;
+}
+
+.panel-group ~ .panel-group {
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid #3a3a3c;
+}
+
+.panel-group + .setting-actions { padding-top: 0; }
+
 .setting-row {
     display: flex;
     align-items: center;
