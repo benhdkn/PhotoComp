@@ -104,7 +104,8 @@ export function drawInnerShadow(ctx, x, y, w, h, radius, scale) {
         ctx.shadowColor = s.color;
         ctx.shadowOffsetX = s.x * scale;
         ctx.shadowOffsetY = s.y * scale;
-        ctx.shadowBlur = s.blur * scale;
+        // CSS drop-shadow() takes a standard deviation, canvas shadowBlur twice that
+        ctx.shadowBlur = s.blur * 2 * scale;
         ctx.fill();
     });
     ctx.restore();

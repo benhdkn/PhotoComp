@@ -9,8 +9,8 @@ const GRID_SETTINGS = [
     { key: 'outerBorderWidth', id: 'outer-border', min: 0, max: 30, update: () => updateFrameBorders() },
     { key: 'borderWidth', id: 'border', min: 0, max: 30, update: () => updateFrameBorders() },
     { key: 'cornerRadius', id: 'corner', min: 0, max: 50, update: updateCornerRadius },
-    { key: 'shadowSize', id: 'shadow', min: 0, max: 20, update: updateOuterShadow },
-    { key: 'innerShadowSize', id: 'inner-shadow', min: 0, max: 20, update: updateInnerShadow },
+    { key: 'shadowSize', id: 'shadow', min: 0, max: 30, update: updateOuterShadow },
+    { key: 'innerShadowSize', id: 'inner-shadow', min: 0, max: 30, update: updateInnerShadow },
 ];
 
 // Selected photo settings, stored on its frameAdjustments entry. Zoom is stored as a factor
