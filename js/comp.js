@@ -170,11 +170,11 @@ export function deselectAll() {
 export function applyFrameAdjustment(i) {
     const image = document.querySelector(`#frame-${i} .frame-image`);
     if (!image) return;
-    const { zoom, x, y, rotation, brightness, contrast } = state.frameAdjustments[i];
+    const { zoom, x, y, rotation, brightness, contrast, saturation } = state.frameAdjustments[i];
     image.style.transform = `scale(${zoom}) translate(${x}%, ${y}%) rotate(${rotation}deg)`;
-    image.style.filter = brightness === 100 && contrast === 100
+    image.style.filter = brightness === 100 && contrast === 100 && saturation === 100
         ? ''
-        : `brightness(${brightness}%) contrast(${contrast}%)`;
+        : `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
 }
 
 // Zooms the photo just enough to cover its cell (it starts out fitted inside it),
@@ -211,7 +211,7 @@ export function clearFrame(i) {
     state.frameAdjustments[i] = defaultAdjustment();
     const image = document.querySelector(`#frame-${i} .frame-image`);
     if (image) image.style.backgroundImage = '';
-    applyFrameAdjustment(i); // also clears any brightness/contrast filter
+    applyFrameAdjustment(i); // also clears any colour filter
     deselectAll();
 }
 

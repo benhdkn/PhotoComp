@@ -22,6 +22,7 @@ const PHOTO_SETTINGS = [
     { key: 'rotation', id: 'rotation', min: -180, max: 180 },
     { key: 'brightness', id: 'brightness', min: 0, max: 200 },
     { key: 'contrast', id: 'contrast', min: 0, max: 200 },
+    { key: 'saturation', id: 'saturation', min: 0, max: 200 },
 ];
 
 export function showSetting(id, value) {

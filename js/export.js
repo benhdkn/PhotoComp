@@ -5,16 +5,23 @@ import { showMessage } from './dom.js';
 import { drawInnerShadow, drawOuterShadow } from './shadows.js';
 import { RESOLUTIONS, defaultAdjustment, state } from './state.js';
 
-// Same maths as CSS brightness() then contrast(), on the export's pixels
-// (canvas filters aren't available in every browser)
-function applyBrightnessContrast(ctx, w, h, brightness, contrast) {
-    const b = brightness / 100, c = contrast / 100;
+// Same maths as CSS brightness(), contrast() then saturate(), on the export's pixels
+// (canvas filters aren't available in every browser). Like CSS, each step is clipped to 0–255.
+function applyColorAdjustments(ctx, w, h, { brightness, contrast, saturation }) {
+    const b = brightness / 100, c = contrast / 100, s = saturation / 100;
+    // saturate() colour matrix from the Filter Effects spec
+    const rr = 0.213 + 0.787 * s, rg = 0.715 - 0.715 * s, rb = 0.072 - 0.072 * s;
+    const gr = 0.213 - 0.213 * s, gg = 0.715 + 0.285 * s, gb = 0.072 - 0.072 * s;
+    const br = 0.213 - 0.213 * s, bg = 0.715 - 0.715 * s, bb = 0.072 + 0.928 * s;
+    const clip = v => v < 0 ? 0 : v > 255 ? 255 : v;
+    const adjust = v => clip((clip(v * b) - 127.5) * c + 127.5);
     const image = ctx.getImageData(0, 0, w, h);
     const d = image.data;
     for (let p = 0; p < d.length; p += 4) {
-        d[p]     = (d[p]     * b - 127.5) * c + 127.5;
-        d[p + 1] = (d[p + 1] * b - 127.5) * c + 127.5;
-        d[p + 2] = (d[p + 2] * b - 127.5) * c + 127.5;
+        const r = adjust(d[p]), g = adjust(d[p + 1]), bl = adjust(d[p + 2]);
+        d[p]     = rr * r + rg * g + rb * bl;
+        d[p + 1] = gr * r + gg * g + gb * bl;
+        d[p + 2] = br * r + bg * g + bb * bl;
     }
     ctx.putImageData(image, 0, 0);
 }
@@ -106,7 +113,7 @@ export function saveToJpg() {
                         c.drawImage(img, -renderedW / 2, -renderedH / 2, renderedW, renderedH);
                     };
 
-                    if (adj.brightness === 100 && adj.contrast === 100) {
+                    if (adj.brightness === 100 && adj.contrast === 100 && adj.saturation === 100) {
                         ctx.save();
                         drawPhoto(ctx, innerX, innerY);
                         ctx.restore();
@@ -117,7 +124,7 @@ export function saveToJpg() {
                         layer.height = Math.ceil(innerH);
                         const lctx = layer.getContext('2d');
                         drawPhoto(lctx, 0, 0);
-                        applyBrightnessContrast(lctx, layer.width, layer.height, adj.brightness, adj.contrast);
+                        applyColorAdjustments(lctx, layer.width, layer.height, adj);
                         ctx.drawImage(layer, innerX, innerY);
                     }
                 }

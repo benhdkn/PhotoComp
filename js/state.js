@@ -10,7 +10,7 @@ export const RESOLUTIONS = [
 export const state = {
     currentPattern: null,     // working copy of the chosen layout (edge drags resize its frames)
     loadedImages: [],         // photo object URL per cell index
-    frameAdjustments: {},     // zoom, position, rotation, brightness, contrast per cell index
+    frameAdjustments: {},     // zoom, position, rotation, brightness, contrast, saturation per cell index
     selectedFrameIndex: null,
     dragSourceIndex: null,    // cell whose photo is being dragged
     borderWidth: 3,
@@ -26,5 +26,5 @@ export const state = {
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
 
 export function defaultAdjustment() {
-    return { zoom: 1, x: 0, y: 0, rotation: 0, brightness: 100, contrast: 100 };
+    return { zoom: 1, x: 0, y: 0, rotation: 0, brightness: 100, contrast: 100, saturation: 100 };
 }
