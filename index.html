@@ -140,7 +140,6 @@
         /* Frame settings panel */
         #frame-settings {
             display: none;
-            width: 280px;
             background: #2c2c2e;
             border-radius: 8px;
             padding: 14px 16px;
@@ -254,9 +253,7 @@
         #pattern-section { display: none; }
 
         #photo-section { margin-bottom: 24px; }
-        #grid-controls { margin-bottom: 16px; }
-
-        #grid-controls .setting-row { width: 600px; }
+        #grid-controls { margin-bottom: 24px; }
 
         #pattern-section.visible,
         #photo-section.visible,
@@ -265,21 +262,49 @@
 
         #composition-wrapper.visible { display: inline-block; }
 
-        /* Composition + frame settings side by side */
-        #composition-area {
+        /* Controls on the left, composition on the right */
+        #layout {
             display: flex;
             align-items: flex-start;
-            gap: 16px;
-            margin-bottom: 16px;
+            gap: 40px;
+        }
+
+        #sidebar {
+            width: 340px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        /* Equal side columns keep the comp centred; the photo settings sit in the right one */
+        #canvas-area {
+            flex: 1;
+            min-height: calc(100vh - 80px);
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-content: center;
+            column-gap: 24px;
+        }
+
+        #composition-wrapper { grid-column: 2; }
+
+        #frame-settings {
+            grid-column: 3;
+            align-self: start;
+            justify-self: start;
+            width: 280px;
         }
 
         /* Export section */
-        #export-section { display: none; margin-bottom: 16px; }
+        #export-section { display: none; margin-bottom: 24px; }
 
         #export-row {
             display: flex;
             align-items: center;
-            gap: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .res-picker { display: flex; gap: 6px; }
@@ -365,73 +390,78 @@
     </style>
 </head>
 <body>
-    <h1>Photo Comp</h1>
+    <div id="layout">
+        <aside id="sidebar">
+            <h1>Photo Comp</h1>
 
-    <div class="label">Number of photos</div>
-    <div class="count-picker" id="count-picker"></div>
+            <div class="label">Number of photos</div>
+            <div class="count-picker" id="count-picker"></div>
 
-    <div id="pattern-section">
-        <div class="label">Layout</div>
-        <div class="pattern-list" id="pattern-list"></div>
-    </div>
-
-    <div id="photo-section">
-        <div class="label">Photos</div>
-        <label class="file-label" id="file-label" for="file">Choose photos</label>
-        <input type="file" id="file" accept="image/jpeg,image/png" multiple>
-    </div>
-
-    <div id="grid-controls">
-        <div class="label">Grid</div>
-        <div class="setting-row">
-            <span>Line width</span>
-            <input type="range" id="border-slider" min="0" max="30" value="5" step="1">
-            <input type="number" id="border-value" min="0" max="30" value="5" step="1">
-        </div>
-        <div class="setting-row">
-            <span>Outer border</span>
-            <input type="range" id="outer-border-slider" min="0" max="30" value="5" step="1">
-            <input type="number" id="outer-border-value" min="0" max="30" value="5" step="1">
-        </div>
-    </div>
-
-    <div id="composition-area">
-        <div id="composition-wrapper">
-            <div id="composition"></div>
-        </div>
-
-        <div id="frame-settings">
-            <div class="setting-row">
-                <span>Zoom</span>
-                <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
-                <input type="number" id="zoom-value" min="100" max="300" value="100" step="1">
+            <div id="pattern-section">
+                <div class="label">Layout</div>
+                <div class="pattern-list" id="pattern-list"></div>
             </div>
-            <div class="setting-row">
-                <span>Horizontal</span>
-                <input type="range" id="x-slider" min="-50" max="50" value="0" step="1">
-                <input type="number" id="x-value" min="-50" max="50" value="0" step="1">
-            </div>
-            <div class="setting-row">
-                <span>Vertical</span>
-                <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
-                <input type="number" id="y-value" min="-50" max="50" value="0" step="1">
-            </div>
-            <div class="setting-actions">
-                <button class="setting-btn" id="replace-btn">Replace photo</button>
-                <button class="setting-btn danger" id="clear-btn">Clear</button>
-            </div>
-        </div>
-    </div>
 
-    <div id="export-section">
-        <div class="label">Export</div>
-        <div id="export-row">
-            <div class="res-picker" id="res-picker"></div>
-            <button id="save" class="setting-btn success" disabled>Export JPEG</button>
-        </div>
-    </div>
+            <div id="photo-section">
+                <div class="label">Photos</div>
+                <label class="file-label" id="file-label" for="file">Choose photos</label>
+                <input type="file" id="file" accept="image/jpeg,image/png" multiple>
+            </div>
 
-    <div class="actions"></div>
+            <div id="grid-controls">
+                <div class="label">Grid</div>
+                <div class="setting-row">
+                    <span>Line width</span>
+                    <input type="range" id="border-slider" min="0" max="30" value="5" step="1">
+                    <input type="number" id="border-value" min="0" max="30" value="5" step="1">
+                </div>
+                <div class="setting-row">
+                    <span>Outer border</span>
+                    <input type="range" id="outer-border-slider" min="0" max="30" value="5" step="1">
+                    <input type="number" id="outer-border-value" min="0" max="30" value="5" step="1">
+                </div>
+            </div>
+
+            <div id="export-section">
+                <div class="label">Export</div>
+                <div id="export-row">
+                    <div class="res-picker" id="res-picker"></div>
+                    <button id="save" class="setting-btn success" disabled>Export JPEG</button>
+                </div>
+            </div>
+
+            <div class="actions"></div>
+        </aside>
+
+        <main id="canvas-area">
+            <div id="composition-wrapper">
+                <div id="composition"></div>
+            </div>
+
+            <div id="frame-settings">
+                <div class="label">Selected photo</div>
+                <div class="setting-row">
+                    <span>Zoom</span>
+                    <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
+                    <input type="number" id="zoom-value" min="100" max="300" value="100" step="1">
+                </div>
+                <div class="setting-row">
+                    <span>Horizontal</span>
+                    <input type="range" id="x-slider" min="-50" max="50" value="0" step="1">
+                    <input type="number" id="x-value" min="-50" max="50" value="0" step="1">
+                </div>
+                <div class="setting-row">
+                    <span>Vertical</span>
+                    <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
+                    <input type="number" id="y-value" min="-50" max="50" value="0" step="1">
+                </div>
+                <div class="setting-actions">
+                    <button class="setting-btn" id="replace-btn">Replace photo</button>
+                    <button class="setting-btn danger" id="clear-btn">Clear</button>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <div id="export-overlay">
         <div class="export-card">
