@@ -1,18 +1,16 @@
 // Loading photos from files.
 
 import { applyFrameAdjustment, releaseImage, renderFrames, selectFrame } from './comp.js';
+import { showMessage } from './dom.js';
 import { GRID_PATTERNS } from './patterns.js';
 import { selectCount, selectPattern } from './picker.js';
 import { ACCEPTED_TYPES, defaultAdjustment, state } from './state.js';
 
 export function onFileChange() {
-    const files = Array.from(this.files).filter(file => {
-        if (!ACCEPTED_TYPES.includes(file.type)) {
-            alert(`Invalid file type: ${file.name}`);
-            return false;
-        }
-        return true;
-    });
+    const all = Array.from(this.files);
+    const files = all.filter(file => ACCEPTED_TYPES.includes(file.type));
+    const skipped = all.filter(file => !files.includes(file)).map(file => file.name);
+    if (skipped.length) showMessage('photo-message', `Only JPEG and PNG photos are supported. Skipped: ${skipped.join(', ')}`);
 
     if (!files.length) return;
 
@@ -40,7 +38,7 @@ export function onFileChange() {
         })
         .catch(err => {
             console.error('Failed to load images:', err);
-            alert('Failed to load one or more images.');
+            showMessage('photo-message', 'Some photos could not be loaded.');
         });
 }
 
@@ -64,7 +62,11 @@ export function replaceFrame(i) {
     input.accept = 'image/jpeg,image/png';
     input.addEventListener('change', function () {
         const file = this.files[0];
-        if (!file || !ACCEPTED_TYPES.includes(file.type)) return;
+        if (!file) return;
+        if (!ACCEPTED_TYPES.includes(file.type)) {
+            showMessage('photo-message', `Only JPEG and PNG photos are supported. Skipped: ${file.name}`);
+            return;
+        }
         loadImages([file])
             .then(([src]) => {
                 releaseImage(state.loadedImages[i]);

@@ -1,6 +1,7 @@
 // JPEG export: redraws the comp on a canvas at the chosen resolution.
 
 import { getOuterSides } from './comp.js';
+import { showMessage } from './dom.js';
 import { drawInnerShadow, drawOuterShadow } from './shadows.js';
 import { RESOLUTIONS, defaultAdjustment, state } from './state.js';
 
@@ -141,7 +142,7 @@ export function saveToJpg() {
         })
         .catch(err => {
             console.error('Export failed:', err);
-            alert('Export failed. See console for details.');
+            showMessage('export-message', 'Export failed. Try a lower resolution.');
         })
         .finally(() => {
             document.getElementById('export-overlay').classList.remove('visible');

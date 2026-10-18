@@ -38,6 +38,17 @@ export function applyPattern(pattern) {
             if (!isSelected) selectFrame(i);
         });
 
+        // Keyboard: Tab to a cell, Enter or Space to select it
+        frame.tabIndex = 0;
+        frame.setAttribute('role', 'button');
+        frame.setAttribute('aria-label', `Cell ${i + 1}`);
+        frame.setAttribute('aria-pressed', false);
+        frame.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            frame.click();
+        });
+
         // Only photos can be dragged; dropping on another cell swaps the two
         frame.draggable = true;
 
@@ -138,7 +149,9 @@ export function renderFrames(images) {
 
 export function selectFrame(i) {
     state.selectedFrameIndex = i;
-    document.getElementById(`frame-${i}`).classList.add('selected');
+    const frame = document.getElementById(`frame-${i}`);
+    frame.classList.add('selected');
+    frame.setAttribute('aria-pressed', true);
 
     showPhotoSettings(state.frameAdjustments[i]);
 
@@ -147,7 +160,10 @@ export function selectFrame(i) {
 
 export function deselectAll() {
     state.selectedFrameIndex = null;
-    document.querySelectorAll('.frame.selected').forEach(f => f.classList.remove('selected'));
+    document.querySelectorAll('.frame.selected').forEach(f => {
+        f.classList.remove('selected');
+        f.setAttribute('aria-pressed', false);
+    });
     document.getElementById('frame-settings').classList.remove('visible');
 }
 

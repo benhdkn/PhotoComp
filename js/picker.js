@@ -1,6 +1,7 @@
 // Photo count and layout pickers.
 
 import { applyPattern } from './comp.js';
+import { setPressed } from './dom.js';
 import { GRID_PATTERNS } from './patterns.js';
 import { state } from './state.js';
 
@@ -9,7 +10,7 @@ const THUMB_H = 60;
 
 export function selectCount(n) {
     document.querySelectorAll('.count-btn').forEach(btn => {
-        btn.classList.toggle('active', Number(btn.dataset.count) === n);
+        setPressed(btn, Number(btn.dataset.count) === n);
     });
     renderPatternPicker(n);
     document.getElementById('pattern-section').classList.add('visible');
@@ -21,8 +22,10 @@ function renderPatternPicker(count) {
     state.currentPattern = null;
 
     GRID_PATTERNS[count].forEach(pattern => {
-        const thumb = document.createElement('div');
+        const thumb = document.createElement('button');
+        thumb.type = 'button';
         thumb.className = 'pattern-thumb';
+        thumb.setAttribute('aria-pressed', false);
         thumb.dataset.patternId = pattern.id;
 
         thumb.appendChild(createPatternSvg(pattern.frames));
@@ -42,7 +45,7 @@ export function selectPattern(count, patternId) {
     state.currentPattern = { ...preset, frames: preset.frames.map(f => ({ ...f })) };
 
     document.querySelectorAll('.pattern-thumb').forEach(thumb => {
-        thumb.classList.toggle('active', thumb.dataset.patternId === patternId);
+        setPressed(thumb, thumb.dataset.patternId === patternId);
     });
 
     applyPattern(state.currentPattern);

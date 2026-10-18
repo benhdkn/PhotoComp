@@ -12,111 +12,112 @@
     <div id="layout">
         <aside id="sidebar">
             <div id="photo-section">
-                <div class="label">Photos</div>
-                <label class="file-label" id="file-label" for="file">Choose photos</label>
+                <h2 class="label">Photos</h2>
+                <button type="button" class="file-label" id="file-label">Choose photos</button>
                 <input type="file" id="file" accept="image/jpeg,image/png" multiple>
+                <p class="message" id="photo-message" aria-live="polite"></p>
             </div>
 
-            <div class="label">Number of photos</div>
-            <div class="count-picker" id="count-picker"></div>
+            <h2 class="label">Number of photos</h2>
+            <div class="count-picker" id="count-picker" role="group" aria-label="Number of photos"></div>
 
             <div id="pattern-section">
-                <div class="label">Layout</div>
-                <div class="pattern-list" id="pattern-list"></div>
+                <h2 class="label">Layout</h2>
+                <div class="pattern-list" id="pattern-list" role="group" aria-label="Layout"></div>
             </div>
 
             <div id="grid-controls">
-                <div class="label">Grid</div>
+                <h2 class="label">Grid</h2>
                 <div class="setting-row">
-                    <span>Outer border</span>
+                    <label for="outer-border-slider">Outer border</label>
                     <input type="range" id="outer-border-slider" min="0" max="30" value="5" step="1">
-                    <input type="number" id="outer-border-value" min="0" max="30" value="5" step="1">
+                    <input type="number" id="outer-border-value" aria-label="Outer border" min="0" max="30" value="5" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Line width</span>
+                    <label for="border-slider">Line width</label>
                     <input type="range" id="border-slider" min="0" max="30" value="5" step="1">
-                    <input type="number" id="border-value" min="0" max="30" value="5" step="1">
+                    <input type="number" id="border-value" aria-label="Line width" min="0" max="30" value="5" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Corners</span>
+                    <label for="corner-slider">Corners</label>
                     <input type="range" id="corner-slider" min="0" max="50" value="0" step="1">
-                    <input type="number" id="corner-value" min="0" max="50" value="0" step="1">
+                    <input type="number" id="corner-value" aria-label="Corners" min="0" max="50" value="0" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Outer shadow</span>
+                    <label for="shadow-slider">Outer shadow</label>
                     <input type="range" id="shadow-slider" min="0" max="20" value="0" step="1">
-                    <input type="number" id="shadow-value" min="0" max="20" value="0" step="1">
+                    <input type="number" id="shadow-value" aria-label="Outer shadow" min="0" max="20" value="0" step="1">
                 </div>
-                <div class="side-toggles" id="outer-shadow-sides">
-                    <button class="side-btn active" data-side="top">Top</button>
-                    <button class="side-btn active" data-side="bottom">Bottom</button>
-                    <button class="side-btn active" data-side="left">Left</button>
-                    <button class="side-btn active" data-side="right">Right</button>
+                <div class="side-toggles" id="outer-shadow-sides" role="group" aria-label="Outer shadow sides">
+                    <button class="side-btn active" aria-pressed="true" data-side="top">Top</button>
+                    <button class="side-btn active" aria-pressed="true" data-side="bottom">Bottom</button>
+                    <button class="side-btn active" aria-pressed="true" data-side="left">Left</button>
+                    <button class="side-btn active" aria-pressed="true" data-side="right">Right</button>
                 </div>
                 <div class="setting-row">
-                    <span>Inner shadow</span>
+                    <label for="inner-shadow-slider">Inner shadow</label>
                     <input type="range" id="inner-shadow-slider" min="0" max="20" value="0" step="1">
-                    <input type="number" id="inner-shadow-value" min="0" max="20" value="0" step="1">
+                    <input type="number" id="inner-shadow-value" aria-label="Inner shadow" min="0" max="20" value="0" step="1">
                 </div>
-                <div class="side-toggles" id="inner-shadow-sides">
-                    <button class="side-btn active" data-side="top">Top</button>
-                    <button class="side-btn active" data-side="bottom">Bottom</button>
-                    <button class="side-btn active" data-side="left">Left</button>
-                    <button class="side-btn active" data-side="right">Right</button>
+                <div class="side-toggles" id="inner-shadow-sides" role="group" aria-label="Inner shadow sides">
+                    <button class="side-btn active" aria-pressed="true" data-side="top">Top</button>
+                    <button class="side-btn active" aria-pressed="true" data-side="bottom">Bottom</button>
+                    <button class="side-btn active" aria-pressed="true" data-side="left">Left</button>
+                    <button class="side-btn active" aria-pressed="true" data-side="right">Right</button>
                 </div>
             </div>
 
             <div id="export-section">
-                <div class="label">Export</div>
+                <h2 class="label">Export</h2>
                 <div id="export-row">
-                    <div class="res-picker" id="res-picker"></div>
+                    <div class="res-picker" id="res-picker" role="group" aria-label="Export resolution"></div>
                     <button id="save" class="setting-btn success" disabled>Export JPEG</button>
                 </div>
+                <p class="message" id="export-message" aria-live="polite"></p>
             </div>
 
-            <div class="actions"></div>
         </aside>
 
         <main id="canvas-area">
-            <div class="label" id="composition-label">Composition</div>
+            <h2 class="label" id="composition-label">Composition</h2>
             <div id="composition-wrapper">
-                <div id="composition"></div>
+                <div id="composition" role="group" aria-label="Composition cells"></div>
             </div>
 
             <div id="frame-settings">
-                <div class="label">Selected photo</div>
+                <h2 class="label">Selected photo</h2>
                 <div class="setting-actions">
                     <button class="setting-btn" id="fit-btn">Auto fit</button>
                 </div>
                 <div class="setting-row">
-                    <span>Zoom</span>
+                    <label for="zoom-slider">Zoom</label>
                     <input type="range" id="zoom-slider" min="100" max="300" value="100" step="1">
-                    <input type="number" id="zoom-value" min="100" max="300" value="100" step="1">
+                    <input type="number" id="zoom-value" aria-label="Zoom" min="100" max="300" value="100" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Horizontal</span>
+                    <label for="x-slider">Horizontal</label>
                     <input type="range" id="x-slider" min="-50" max="50" value="0" step="1">
-                    <input type="number" id="x-value" min="-50" max="50" value="0" step="1">
+                    <input type="number" id="x-value" aria-label="Horizontal" min="-50" max="50" value="0" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Vertical</span>
+                    <label for="y-slider">Vertical</label>
                     <input type="range" id="y-slider" min="-50" max="50" value="0" step="1">
-                    <input type="number" id="y-value" min="-50" max="50" value="0" step="1">
+                    <input type="number" id="y-value" aria-label="Vertical" min="-50" max="50" value="0" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Rotation</span>
+                    <label for="rotation-slider">Rotation</label>
                     <input type="range" id="rotation-slider" min="-180" max="180" value="0" step="1">
-                    <input type="number" id="rotation-value" min="-180" max="180" value="0" step="1">
+                    <input type="number" id="rotation-value" aria-label="Rotation" min="-180" max="180" value="0" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Brightness</span>
+                    <label for="brightness-slider">Brightness</label>
                     <input type="range" id="brightness-slider" min="0" max="200" value="100" step="1">
-                    <input type="number" id="brightness-value" min="0" max="200" value="100" step="1">
+                    <input type="number" id="brightness-value" aria-label="Brightness" min="0" max="200" value="100" step="1">
                 </div>
                 <div class="setting-row">
-                    <span>Contrast</span>
+                    <label for="contrast-slider">Contrast</label>
                     <input type="range" id="contrast-slider" min="0" max="200" value="100" step="1">
-                    <input type="number" id="contrast-value" min="0" max="200" value="100" step="1">
+                    <input type="number" id="contrast-value" aria-label="Contrast" min="0" max="200" value="100" step="1">
                 </div>
                 <div class="setting-actions">
                     <button class="setting-btn" id="replace-btn">Replace photo</button>
@@ -126,7 +127,7 @@
         </main>
     </div>
 
-    <div id="export-overlay">
+    <div id="export-overlay" role="status">
         <div class="export-card">
             <p>Exporting…</p>
             <div class="progress-track"></div>
