@@ -127,7 +127,8 @@
             background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
         }
 
-        .frame.selected::after {
+        .frame.selected::after,
+        .frame.drop-target::after {
             content: '';
             position: absolute;
             inset: 0;
@@ -137,6 +138,14 @@
             pointer-events: none;
             z-index: 1;
         }
+
+        /* Drag and drop to swap photos */
+        .frame.drop-target::after {
+            border-style: dashed;
+            background: rgba(48, 209, 88, 0.2);
+        }
+
+        .frame.dragging { opacity: 0.4; }
 
         .frame-image {
             position: absolute;
@@ -1236,6 +1245,7 @@
         let loadedImages = [];
         let frameAdjustments = {};
         let selectedFrameIndex = null;
+        let dragSourceIndex = null;
         let borderWidth = 5;
         let outerBorderWidth = 5;
         let cornerRadius = 0;
@@ -1459,6 +1469,44 @@
                     if (!isSelected) selectFrame(i);
                 });
 
+                // Only photos can be dragged; dropping on another cell swaps the two
+                frame.draggable = true;
+
+                frame.addEventListener('dragstart', (e) => {
+                    if (!loadedImages[i]) {
+                        e.preventDefault();
+                        return;
+                    }
+                    dragSourceIndex = i;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', String(i));
+                    frame.classList.add('dragging');
+                });
+
+                frame.addEventListener('dragend', () => {
+                    dragSourceIndex = null;
+                    frame.classList.remove('dragging');
+                    document.querySelectorAll('.frame.drop-target').forEach(el => el.classList.remove('drop-target'));
+                });
+
+                frame.addEventListener('dragover', (e) => {
+                    if (dragSourceIndex === null || dragSourceIndex === i) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    frame.classList.add('drop-target');
+                });
+
+                frame.addEventListener('dragleave', (e) => {
+                    if (!frame.contains(e.relatedTarget)) frame.classList.remove('drop-target');
+                });
+
+                frame.addEventListener('drop', (e) => {
+                    if (dragSourceIndex === null || dragSourceIndex === i) return;
+                    e.preventDefault();
+                    frame.classList.remove('drop-target');
+                    swapFrames(dragSourceIndex, i);
+                });
+
                 composition.appendChild(frame);
             });
 
@@ -1575,6 +1623,16 @@
                 image.style.transform = '';
             }
             deselectAll();
+        }
+
+        function swapFrames(a, b) {
+            [loadedImages[a], loadedImages[b]] = [loadedImages[b] || null, loadedImages[a] || null];
+            [frameAdjustments[a], frameAdjustments[b]] = [frameAdjustments[b], frameAdjustments[a]];
+            renderFrames(loadedImages);
+            applyFrameAdjustment(a);
+            applyFrameAdjustment(b);
+            deselectAll();
+            selectFrame(b);
         }
 
         function replaceFrame(i) {
