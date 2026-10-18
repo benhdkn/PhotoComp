@@ -185,7 +185,12 @@ export function autoFitFrame(i) {
     img.src = src;
 }
 
+export function releaseImage(src) {
+    if (src) URL.revokeObjectURL(src);
+}
+
 export function clearFrame(i) {
+    releaseImage(state.loadedImages[i]);
     state.loadedImages[i] = null;
     state.frameAdjustments[i] = defaultAdjustment();
     const image = document.querySelector(`#frame-${i} .frame-image`);

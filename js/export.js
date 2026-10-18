@@ -125,11 +125,19 @@ export function saveToJpg() {
                 ctx.restore();
             });
 
-            const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+            // A Blob rather than a data URL: no huge base64 string, which large exports can't afford
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('JPEG encoding failed')), 'image/jpeg', 1.0);
+            });
+        })
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = generateFilename();
-            link.href = dataUrl;
+            link.href = url;
             link.click();
+            // Give the download time to start before releasing the file
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
         })
         .catch(err => {
             console.error('Export failed:', err);

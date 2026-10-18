@@ -1,6 +1,6 @@
 // Loading photos from files.
 
-import { applyFrameAdjustment, renderFrames, selectFrame } from './comp.js';
+import { applyFrameAdjustment, releaseImage, renderFrames, selectFrame } from './comp.js';
 import { GRID_PATTERNS } from './patterns.js';
 import { selectCount, selectPattern } from './picker.js';
 import { ACCEPTED_TYPES, defaultAdjustment, state } from './state.js';
@@ -52,14 +52,10 @@ function getEmptySlots() {
     return slots;
 }
 
+// Object URLs point at the files in memory, without copying them into base64 text.
+// Release them with releaseImage() once a photo is no longer used.
 function loadImages(files) {
-    const promises = files.map(file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = () => reject(new Error(`Failed to read: ${file.name}`));
-        reader.readAsDataURL(file);
-    }));
-    return Promise.all(promises);
+    return Promise.resolve(files.map(file => URL.createObjectURL(file)));
 }
 
 export function replaceFrame(i) {
@@ -71,6 +67,7 @@ export function replaceFrame(i) {
         if (!file || !ACCEPTED_TYPES.includes(file.type)) return;
         loadImages([file])
             .then(([src]) => {
+                releaseImage(state.loadedImages[i]);
                 state.loadedImages[i] = src;
                 state.frameAdjustments[i] = defaultAdjustment();
                 renderFrames(state.loadedImages);

@@ -9,7 +9,7 @@ export const RESOLUTIONS = [
 
 export const state = {
     currentPattern: null,     // working copy of the chosen layout (edge drags resize its frames)
-    loadedImages: [],         // photo data URL per cell index
+    loadedImages: [],         // photo object URL per cell index
     frameAdjustments: {},     // zoom, position, rotation, brightness, contrast per cell index
     selectedFrameIndex: null,
     dragSourceIndex: null,    // cell whose photo is being dragged
